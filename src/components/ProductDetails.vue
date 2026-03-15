@@ -129,7 +129,7 @@ const handleDelete = async () => {
                     <h2 class="text-xl md:text-3xl font-bold text-[#3A3A3A] uppercase tracking-wider">
                         {{ product.name }}
                     </h2>
-                    <p class="text-lg md:text-xl font-medium text-gray-600">${{ product.price }}</p>
+                    <p class="text-lg md:text-xl font-medium text-gray-600">₦{{ product.price }}</p>
                 </div>
 
                 <div class="text-sm md:text-base text-gray-500 leading-relaxed max-w-md">

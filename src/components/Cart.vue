@@ -101,7 +101,7 @@ const removeItem = async (docId) => {
 
                     <div class="grow text-center sm:text-left">
                         <h2 class="text-lg font-bold uppercase tracking-wider text-[#3A3A3A]">{{ item.name }}</h2>
-                        <p class="text-gray-500 mt-1">${{ item.price }}</p>
+                        <p class="text-gray-500 mt-1">₦{{ item.price }}</p>
 
                         <div class="flex items-center justify-center sm:justify-start mt-4 gap-4">
                             <div class="flex items-center border border-gray-200 rounded">

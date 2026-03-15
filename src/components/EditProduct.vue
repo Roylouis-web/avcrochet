@@ -194,7 +194,7 @@ const handleSubmit = async () => {
 
             <div class="grid grid-cols-2 gap-6">
                 <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Price ($)</label>
+                    <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
                     <input :disabled="!isEditing" v-model="form.price" type="number" step="0.01"
                         :placeholder="initialData.price"
                         class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50">
