@@ -103,7 +103,7 @@ const handleLogout = async () => {
   <header class="relative bg-white z-50">
     <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-100">
       <RouterLink to="/" class="hover:opacity-80 transition-opacity">
-        <img src="/WhatsApp Image 2026-01-19 at 09.48.29.png" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
+        <img src="/src/public/WhatsApp Image 2026-01-19 at 09.48.29.png" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
       </RouterLink>
 
       <!-- Desktop Navigation -->
