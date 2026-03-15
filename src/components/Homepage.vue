@@ -73,16 +73,20 @@ onUnmounted(() => { if (observer) observer.disconnect() })
   <div class="bg-white flex flex-col my-16 gap-16 min-h-screen">
 
     <!-- Skeletons -->
+    <!-- Match the number of skeletons to your typical 'itemsPerPage' (4) -->
     <template v-if="loading && productsRef.length === 0">
-      <div v-for="n in 2" :key="n" class="mx-auto lg:ml-40 w-[90%] sm:w-[65%] lg:w-[40%] animate-pulse">
-        <div class="h-8 bg-gray-100 w-48 mb-6 rounded"></div>
-        <div class="aspect-square bg-gray-100 w-full rounded-[10px]"></div>
+      <div class="flex flex-col gap-16">
+        <div v-for="n in 4" :key="n" class="mx-auto lg:ml-40 w-[90%] sm:w-[65%] lg:w-[40%] animate-pulse">
+          <div class="h-8 bg-gray-100 w-48 mb-6 rounded"></div>
+          <div class="aspect-square bg-gray-100 w-full rounded-[10px]"></div>
+        </div>
       </div>
     </template>
 
+
     <!-- Content -->
     <template v-else-if="productsRef.length > 0">
-      <TransitionGroup name="list" tag="div" class="flex flex-col gap-16"
+      <TransitionGroup name="list" tag="div" appear class="flex flex-col gap-16"
         enter-active-class="transition duration-700 ease-out" enter-from-class="opacity-0 translate-y-10"
         enter-to-class="opacity-100 translate-y-0">
         <!-- FIX: Keyed child for TransitionGroup -->
