@@ -7,7 +7,7 @@ const router = useRouter();
 const errors = ref({});
 const successMessage = ref('');
 const isPublishing = ref(false);
-const rawFile = ref(null); // Stores the actual blob for upload
+const rawFile = ref(null);
 
 const form = ref({
     name: '',
@@ -30,9 +30,7 @@ const handleFileChange = (event) => {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
             canvas.toBlob((blob) => {
-                // Convert blob to File object for Appwrite upload
                 rawFile.value = new File([blob], `${form.value.name || 'product'}.webp`, { type: "image/webp" });
-
                 if (form.value.url?.startsWith('blob:')) URL.revokeObjectURL(form.value.url);
                 form.value.url = URL.createObjectURL(blob);
                 delete errors.value.url;
@@ -44,27 +42,30 @@ const handleFileChange = (event) => {
 };
 
 const handleCreate = async () => {
-    // Validation Check
-    if (!form.value.name || !form.value.price || !rawFile.value || !form.value.category) {
-        errors.value.submit = "Please fill in all fields and upload an image.";
+    // UPDATED VALIDATION: Added description check
+    if (
+        !form.value.name?.trim() ||
+        !form.value.price ||
+        !rawFile.value ||
+        !form.value.category?.trim() ||
+        !form.value.description?.trim()
+    ) {
+        errors.value.submit = "Please fill in all fields (including description) and upload an image.";
         return;
     }
 
     isPublishing.value = true;
     try {
-        // 1. Upload to Storage bucket first
         const uploadedUrl = await AppwriteService.uploadFile(rawFile.value);
 
-        // 2. Prepare flat product data (matching your database columns)
         const productData = {
             name: form.value.name,
-            price: Number(form.value.price), // Force Double type
+            price: Number(form.value.price),
             description: form.value.description,
             category: form.value.category.toLowerCase(),
             url: uploadedUrl
         };
 
-        // 3. Create the row
         await AppwriteService.createProduct(productData);
 
         successMessage.value = "Product published successfully!";
@@ -109,29 +110,32 @@ const handleCreate = async () => {
                 <input type="file" id="file-upload" class="hidden" accept="image/*" @change="handleFileChange" />
             </div>
 
-            <!-- Fields -->
+            <!-- Name -->
             <div class="flex flex-col gap-3">
-                <label class="text-xs font-black uppercase tracking-wider text-black">Product Name</label>
+                <label class="text-xs font-black uppercase tracking-wider text-black">Product Name *</label>
                 <input v-model="form.name" type="text" placeholder="e.g. Silk Shrug"
                     class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
             </div>
 
             <div class="grid grid-cols-2 gap-6">
+                <!-- Price -->
                 <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
+                    <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦) *</label>
                     <input v-model="form.price" type="number" step="0.01"
                         class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
                 </div>
+                <!-- Category -->
                 <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
+                    <label class="text-xs font-black uppercase tracking-wider text-black">Category *</label>
                     <input v-model="form.category" type="text"
                         class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
                 </div>
             </div>
 
+            <!-- Description -->
             <div class="flex flex-col gap-3">
-                <label class="text-xs font-black uppercase tracking-wider text-black">Description</label>
-                <textarea v-model="form.description"
+                <label class="text-xs font-black uppercase tracking-wider text-black">Description *</label>
+                <textarea v-model="form.description" placeholder="Describe your product..."
                     class="border-gray-200 border-2 h-48 p-4 focus:border-black outline-none transition-colors resize-none"></textarea>
             </div>
 

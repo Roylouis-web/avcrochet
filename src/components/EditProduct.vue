@@ -8,7 +8,7 @@ const router = useRouter();
 const isEditing = ref(false);
 const isLoading = ref(true);
 const isSaving = ref(false);
-const errors = ref({});
+const errors = ref({}); // Used to store validation messages
 const successMessage = ref('');
 const rawFile = ref(null);
 
@@ -32,7 +32,6 @@ onMounted(async () => {
     try {
         const product = await AppwriteService.getProduct(route.params.id);
         if (product) {
-            // Populate both to compare later
             const data = {
                 name: product.name,
                 price: product.price,
@@ -51,18 +50,34 @@ onMounted(async () => {
     }
 });
 
+// STRENGTHENED VALIDATION LOGIC
 const validateForm = () => {
     const newErrors = {};
     const alphaRegex = /^[A-Za-z\s]+$/;
 
-    if (!form.value.name?.trim()) newErrors.name = "Product name is required";
-    if (form.value.price <= 0) newErrors.price = "Price must be greater than 0";
+    if (!form.value.name?.trim()) {
+        newErrors.name = "Product name is required";
+    }
+
+    if (form.value.price === null || form.value.price === undefined || form.value.price <= 0) {
+        newErrors.price = "Valid price is required";
+    }
+
     if (!form.value.category?.trim()) {
         newErrors.category = "Category is required";
     } else if (!alphaRegex.test(form.value.category)) {
-        newErrors.category = "Only alphabets allowed";
+        newErrors.category = "Category should only contain letters";
     }
-    if (form.value.description?.length < 10) newErrors.description = "Description too short";
+
+    if (!form.value.description?.trim()) {
+        newErrors.description = "Description is required";
+    } else if (form.value.description.length < 10) {
+        newErrors.description = "Description must be at least 10 characters";
+    }
+
+    if (!form.value.url) {
+        newErrors.url = "Product image is required";
+    }
 
     errors.value = newErrors;
     return Object.keys(newErrors).length === 0;
@@ -86,7 +101,8 @@ const handleFileChange = (event) => {
                 rawFile.value = new File([blob], "product.webp", { type: "image/webp" });
                 if (form.value.url?.startsWith('blob:')) URL.revokeObjectURL(form.value.url);
                 form.value.url = URL.createObjectURL(blob);
-                delete errors.value.url;
+                // Clear image error if file is selected
+                if (errors.value.url) delete errors.value.url;
             }, 'image/webp', 0.8);
         };
         img.src = e.target.result;
@@ -100,54 +116,46 @@ const handleSubmit = async () => {
         return;
     }
 
-    if (validateForm()) {
-        isSaving.value = true;
-        try {
-            const updateData = {};
+    // Stop submission if validation fails
+    if (!validateForm()) return;
 
-            // 1. Build partial update by comparing fields
-            if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
-            if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
-            if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
-            if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
+    isSaving.value = true;
+    try {
+        const updateData = {};
 
-            // 2. Handle image upload only if new file exists
-            if (rawFile.value) {
-                updateData.url = await AppwriteService.uploadFile(rawFile.value);
-            }
+        if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
+        if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
+        if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
+        if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
 
-            // 3. Optional: Re-add 'Required' fields if Appwrite demands them even if unchanged
-            // Uncomment the lines below if your Appwrite Console marks these as 'Required'
-            // updateData.name = form.value.name;
-            // updateData.price = Number(form.value.price);
-
-            if (Object.keys(updateData).length > 0) {
-                await AppwriteService.editProduct(route.params.id, updateData);
-                successMessage.value = "Changes saved! Redirecting...";
-            } else {
-                successMessage.value = "No changes detected. Redirecting...";
-            }
-
-            isEditing.value = false;
-
-            // 4. Use longer timeout (2.5s) to allow WebSocket cleanup before redirect
-            setTimeout(() => {
-                const cleanCat = (updateData.category || initialData.value.category)
-                    .toLowerCase()
-                    .replace(/\s+/g, '-');
-                router.push(`/products/${cleanCat}/${route.params.id}`);
-            }, 2500);
-
-        } catch (error) {
-            console.error("Update failed:", error);
-            errors.value.submit = error.message || "Update failed.";
-        } finally {
-            isSaving.value = false;
+        if (rawFile.value) {
+            updateData.url = await AppwriteService.uploadFile(rawFile.value);
         }
+
+        if (Object.keys(updateData).length > 0) {
+            await AppwriteService.editProduct(route.params.id, updateData);
+            successMessage.value = "Changes saved! Redirecting...";
+        } else {
+            successMessage.value = "No changes detected. Redirecting...";
+        }
+
+        isEditing.value = false;
+
+        setTimeout(() => {
+            const cleanCat = (updateData.category || initialData.value.category)
+                .toLowerCase()
+                .replace(/\s+/g, '-');
+            router.push(`/products/${cleanCat}/${route.params.id}`);
+        }, 2500);
+
+    } catch (error) {
+        console.error("Update failed:", error);
+        errors.value.submit = error.message || "Update failed.";
+    } finally {
+        isSaving.value = false;
     }
 };
 </script>
-
 
 <template>
     <div v-if="isLoading" class="flex justify-center items-center h-screen">
@@ -161,6 +169,7 @@ const handleSubmit = async () => {
             </h1>
         </header>
 
+        <!-- Success/Global Error Messages -->
         <div v-if="successMessage" class="mb-8 p-4 bg-green-50 border border-green-200 rounded-md text-center">
             <p class="text-green-600 text-[10px] font-bold uppercase tracking-widest">{{ successMessage }}</p>
         </div>
@@ -170,12 +179,12 @@ const handleSubmit = async () => {
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col gap-8">
+            <!-- Image Field -->
             <div class="flex flex-col gap-4">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Product Image</label>
                 <div class="aspect-square w-full overflow-hidden rounded-[10px] bg-gray-50 border-2 border-dashed flex items-center justify-center relative group"
-                    :class="errors.url ? 'border-red-400' : 'border-gray-200'">
-                    <img v-if="form.url || initialData.url" :src="form.url || initialData.url"
-                        class="w-full h-full object-cover" />
+                    :class="errors.url ? 'border-red-500' : 'border-gray-200'">
+                    <img v-if="form.url" :src="form.url" class="w-full h-full object-cover" />
                     <div v-if="isEditing"
                         class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <label for="file-upload"
@@ -183,40 +192,55 @@ const handleSubmit = async () => {
                             Image</label>
                     </div>
                 </div>
+                <p v-if="errors.url" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.url }}</p>
                 <input type="file" id="file-upload" class="hidden" accept="image/*" :disabled="!isEditing"
                     @change="handleFileChange" />
             </div>
 
+            <!-- Name Field -->
             <div class="flex flex-col gap-3">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Product Name</label>
-                <input :disabled="!isEditing" v-model="form.name" type="text" :placeholder="initialData.name"
-                    class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50 placeholder:text-gray-300">
+                <input :disabled="!isEditing" v-model="form.name" type="text"
+                    class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
+                    :class="errors.name ? 'border-red-500' : 'border-gray-200'">
+                <p v-if="errors.name" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.name }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-6">
+                <!-- Price Field -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
                     <input :disabled="!isEditing" v-model="form.price" type="number" step="0.01"
-                        :placeholder="initialData.price"
-                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50">
+                        class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
+                        :class="errors.price ? 'border-red-500' : 'border-gray-200'">
+                    <p v-if="errors.price" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.price }}</p>
                 </div>
+
+                <!-- Category Field -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
                     <input :disabled="!isEditing" v-model="form.category" type="text"
-                        :placeholder="initialData.category" @input="handleCategoryInput"
-                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50">
+                        class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
+                        :class="errors.category ? 'border-red-500' : 'border-gray-200'">
+                    <p v-if="errors.category" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.category }}
+                    </p>
                 </div>
             </div>
 
+            <!-- Description Field -->
             <div class="flex flex-col gap-3">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Description</label>
-                <textarea :disabled="!isEditing" v-model="form.description" :placeholder="initialData.description"
-                    class="border-gray-200 border-2 h-32 p-4 focus:border-black outline-none transition-colors text-base resize-none disabled:bg-gray-50"></textarea>
+                <textarea :disabled="!isEditing" v-model="form.description"
+                    class="border-2 h-32 p-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50 resize-none"
+                    :class="errors.description ? 'border-red-500' : 'border-gray-200'"></textarea>
+                <p v-if="errors.description" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.description
+                    }}</p>
             </div>
 
+            <!-- Submit Button -->
             <button type="submit" :disabled="isSaving"
-                class="bg-black text-white w-full py-4 text-sm font-black tracking-[0.2em] hover:bg-gray-800 transition-all uppercase disabled:opacity-50">
-                {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Edit Product') }}
+                class="bg-black text-white py-4 px-12 text-sm font-black tracking-widest hover:bg-gray-800 transition-all duration-300 w-full disabled:bg-gray-400">
+                {{ isSaving ? 'SAVING...' : (isEditing ? 'SAVE CHANGES' : 'EDIT PRODUCT') }}
             </button>
         </form>
     </section>
