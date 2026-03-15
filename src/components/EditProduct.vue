@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppwriteService from '@/services/AppwriteService';
-//console
+
 const route = useRoute();
 const router = useRouter();
 const isEditing = ref(false);
@@ -10,8 +10,6 @@ const isLoading = ref(true);
 const isSaving = ref(false);
 const errors = ref({});
 const successMessage = ref('');
-
-// NEW: Ref to hold the actual processed blob for Appwrite upload
 const rawFile = ref(null);
 
 const form = ref({
@@ -34,13 +32,16 @@ onMounted(async () => {
     try {
         const product = await AppwriteService.getProduct(route.params.id);
         if (product) {
-            initialData.value = {
+            // Populate both to compare later
+            const data = {
                 name: product.name,
                 price: product.price,
                 category: product.category,
                 description: product.description,
                 url: product.url
             };
+            initialData.value = { ...data };
+            form.value = { ...data };
         }
     } catch (error) {
         console.error("Product fetch failed:", error);
@@ -50,27 +51,18 @@ onMounted(async () => {
     }
 });
 
-const handleCategoryInput = (e) => {
-    form.value.category = e.target.value.replace(/[^A-Za-z\s]/g, '');
-};
-
 const validateForm = () => {
     const newErrors = {};
     const alphaRegex = /^[A-Za-z\s]+$/;
 
-    const name = form.value.name || initialData.value.name;
-    const price = form.value.price !== null ? form.value.price : initialData.value.price;
-    const category = form.value.category || initialData.value.category;
-    const description = form.value.description || initialData.value.description;
-
-    if (!name?.trim()) newErrors.name = "Product name is required";
-    if (price <= 0) newErrors.price = "Price must be greater than 0";
-    if (!category?.trim()) {
+    if (!form.value.name?.trim()) newErrors.name = "Product name is required";
+    if (form.value.price <= 0) newErrors.price = "Price must be greater than 0";
+    if (!form.value.category?.trim()) {
         newErrors.category = "Category is required";
-    } else if (!alphaRegex.test(category)) {
+    } else if (!alphaRegex.test(form.value.category)) {
         newErrors.category = "Only alphabets allowed";
     }
-    if (description?.length < 10) newErrors.description = "Description too short";
+    if (form.value.description?.length < 10) newErrors.description = "Description too short";
 
     errors.value = newErrors;
     return Object.keys(newErrors).length === 0;
@@ -91,9 +83,7 @@ const handleFileChange = (event) => {
             ctx.drawImage(img, 0, 0);
 
             canvas.toBlob((blob) => {
-                // Store the actual blob file for later upload
                 rawFile.value = new File([blob], "product.webp", { type: "image/webp" });
-
                 if (form.value.url?.startsWith('blob:')) URL.revokeObjectURL(form.value.url);
                 form.value.url = URL.createObjectURL(blob);
                 delete errors.value.url;
@@ -113,40 +103,51 @@ const handleSubmit = async () => {
     if (validateForm()) {
         isSaving.value = true;
         try {
-            let uploadedUrl = form.value.url || initialData.value.url;
+            const updateData = {};
 
-            // 1. If we have a new processed file, upload it to Appwrite Storage first
+            // 1. Build partial update by comparing fields
+            if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
+            if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
+            if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
+            if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
+
+            // 2. Handle image upload only if new file exists
             if (rawFile.value) {
-                uploadedUrl = await AppwriteService.uploadFile(rawFile.value);
+                updateData.url = await AppwriteService.uploadFile(rawFile.value);
             }
 
-            // 2. Prepare the database update payload
-            const updateData = {
-                name: form.value.name || initialData.value.name,
-                price: Number(form.value.price !== null ? form.value.price : initialData.value.price),
-                category: form.value.category || initialData.value.category,
-                description: form.value.description || initialData.value.description,
-                url: uploadedUrl // Use the newly generated Storage URL
-            };
+            // 3. Optional: Re-add 'Required' fields if Appwrite demands them even if unchanged
+            // Uncomment the lines below if your Appwrite Console marks these as 'Required'
+            // updateData.name = form.value.name;
+            // updateData.price = Number(form.value.price);
 
-            await AppwriteService.editProduct(route.params.id, updateData);
+            if (Object.keys(updateData).length > 0) {
+                await AppwriteService.editProduct(route.params.id, updateData);
+                successMessage.value = "Changes saved! Redirecting...";
+            } else {
+                successMessage.value = "No changes detected. Redirecting...";
+            }
 
-            successMessage.value = "Changes saved successfully! Redirecting...";
             isEditing.value = false;
 
+            // 4. Use longer timeout (2.5s) to allow WebSocket cleanup before redirect
             setTimeout(() => {
-                const cleanCat = updateData.category.toLowerCase().replace(/\s+/g, '-');
+                const cleanCat = (updateData.category || initialData.value.category)
+                    .toLowerCase()
+                    .replace(/\s+/g, '-');
                 router.push(`/products/${cleanCat}/${route.params.id}`);
-            }, 2000);
+            }, 2500);
+
         } catch (error) {
             console.error("Update failed:", error);
-            errors.value.submit = error.message || "Failed to update. Check console for details.";
+            errors.value.submit = error.message || "Update failed.";
         } finally {
             isSaving.value = false;
         }
     }
 };
 </script>
+
 
 <template>
     <div v-if="isLoading" class="flex justify-center items-center h-screen">
