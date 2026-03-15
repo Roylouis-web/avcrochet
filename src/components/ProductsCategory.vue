@@ -124,7 +124,7 @@ const totalPages = computed(() => Math.ceil(totalProducts.value / itemsPerPage))
                         <div class="mt-4">
                             <p class="font-bold hover:underline underline-offset-4 truncate lg:text-xl text-[#3A3A3A]">
                                 {{ outfit.name }}</p>
-                            <p class="text-gray-600 font-medium">${{ outfit.price }}</p>
+                            <p class="text-gray-600 font-medium">₦{{ outfit.price }}</p>
                         </div>
                     </RouterLink>
                 </div>
