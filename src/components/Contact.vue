@@ -9,26 +9,31 @@ const formData = ref({
 })
 
 const status = ref('')
-
 const handleSend = async () => {
     status.value = 'Sending...'
 
     try {
-        const response = await fetch("https://formspree.io", {
+        // MUST include your specific form ID (e.g., /f/xbjponvq)
+        const response = await fetch("https://formspree.io/f/mlgpwakv", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json" // Highly recommended for AJAX
+            },
             body: JSON.stringify(formData.value)
         });
 
         if (response.ok) {
             status.value = "Message sent successfully!"
-            // Reset form
+            // Reset form correctly by re-assigning the object
             formData.value = { name: '', email: '', telephone: '', message: '' }
         } else {
-            status.value = "Oops! There was a problem."
+            // Formspree often returns detailed error JSON
+            const data = await response.json()
+            status.value = data.error || "Oops! There was a problem."
         }
     } catch (error) {
-        status.value = "Error sending message."
+        status.value = "Error sending message. Check your connection."
     }
 }
 </script>
