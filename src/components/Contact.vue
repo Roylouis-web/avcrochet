@@ -13,12 +13,11 @@ const handleSend = async () => {
     status.value = 'Sending...'
 
     try {
-        // MUST include your specific form ID (e.g., /f/xbjponvq)
-        const response = await fetch("https://formspree.io/f/mlgpwakv", {
+        const response = await fetch("https://formspree.io/f/mbdzawnn", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Accept": "application/json" // Highly recommended for AJAX
+                "Accept": "application/json"
             },
             body: JSON.stringify(formData.value)
         });
