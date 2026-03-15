@@ -1,6 +1,35 @@
 <script setup>
-const handleSend = () => {
-    console.log("Message sent");
+import { ref } from 'vue'
+
+const formData = ref({
+    name: '',
+    email: '',
+    telephone: '',
+    message: ''
+})
+
+const status = ref('')
+
+const handleSend = async () => {
+    status.value = 'Sending...'
+
+    try {
+        const response = await fetch("https://formspree.io", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData.value)
+        });
+
+        if (response.ok) {
+            status.value = "Message sent successfully!"
+            // Reset form
+            formData.value = { name: '', email: '', telephone: '', message: '' }
+        } else {
+            status.value = "Oops! There was a problem."
+        }
+    } catch (error) {
+        status.value = "Error sending message."
+    }
 }
 </script>
 
@@ -22,33 +51,34 @@ const handleSend = () => {
         <div class="gap-6 flex flex-col md:grid md:grid-cols-2">
             <div class="flex flex-col gap-3">
                 <label for="name" class="text-xs font-black uppercase tracking-wider text-black">Name</label>
-                <input type="text" name="name" id="name"
+                <input v-model="formData.name" type="text" name="name" id="name"
                     class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base">
             </div>
             <div class="flex flex-col gap-3">
                 <label for="email" class="text-xs font-black uppercase tracking-wider text-black">Email *</label>
-                <input type="email" name="email" id="email" required
+                <input v-model="formData.email" type="email" name="email" id="email" required
                     class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base">
             </div>
         </div>
 
         <div class="flex flex-col gap-3">
             <label for="telephone" class="text-xs font-black uppercase tracking-wider text-black">Telephone</label>
-            <input type="tel" name="telephone" id="telephone"
+            <input v-model="formData.telephone" type="tel" name="telephone" id="telephone"
                 class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base">
         </div>
 
         <div class="flex flex-col gap-3">
             <label for="message" class="text-xs font-black uppercase tracking-wider text-black">Message</label>
-            <textarea name="message" id="message"
+            <textarea v-model="formData.message" name="message" id="message"
                 class="border-gray-200 border-2 h-48 p-4 focus:border-black outline-none transition-colors text-base resize-none"></textarea>
         </div>
 
         <div>
-            <button
+            <button type="submit"
                 class="bg-black text-white py-4 px-12 text-sm font-black tracking-widest hover:bg-gray-800 transition-all duration-300 w-full sm:w-max">
                 SEND MESSAGE
             </button>
+            <p v-if="status" class="mt-4 font-bold text-sm">{{ status }}</p>
         </div>
     </form>
 </template>
