@@ -47,7 +47,7 @@ const fetchProducts = async () => {
             name: row.name,
             category: row.category,
             price: row.price,
-            description: row.description,
+            description: row.description || '',
             url: row.url
         }));
 
