@@ -15,13 +15,7 @@
         1. action: Set this to your Formspree email endpoint.
         2. method: MUST be "POST".
       -->
-      <form action="https://formspree.io" method="POST" class="flex flex-col gap-2 mt-4 sm:flex-row w-full">
-        <!-- 
-          OPTIONAL: Redirects back to your page after submission.
-          Replace the value with your actual website URL.
-        -->
-        <input type="hidden" name="_next" value="https://yourwebsite.com">
-
+      <form class="flex flex-col gap-2 mt-4 sm:flex-row w-full">
         <input type="email" name="email" id="footer-email" placeholder="Email address" required
           class="border border-amber-50 md:w-4/5 px-4 py-2 w-full text-black outline-none focus:border-[#3A3A3A] transition-colors" />
 
