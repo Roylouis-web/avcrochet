@@ -102,7 +102,7 @@ onUnmounted(() => { if (observer) observer.disconnect() })
           </div>
           <RouterLink
             class="inline-block border-2 border-black py-3 px-8 w-max text-xs font-bold tracking-widest hover:bg-black hover:text-white transition-all"
-            :to="`/products?q=${product.category}`">
+            :to="`/products/${product.category}`">
             VIEW COLLECTION
           </RouterLink>
         </figure>
