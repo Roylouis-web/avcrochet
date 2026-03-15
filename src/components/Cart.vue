@@ -127,7 +127,7 @@ const removeItem = async (docId) => {
             <section class="flex flex-col items-center md:items-end gap-6 border-t-2 border-[whitesmoke] pt-10">
                 <div class="flex justify-between w-full sm:w-72">
                     <span class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Subtotal</span>
-                    <span class="text-xl font-bold">${{ subtotal }}</span>
+                    <span class="text-xl font-bold">₦{{ subtotal }}</span>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4 mx-auto md:mx-0 w-[75%] sm:w-max">
                     <RouterLink to="/checkout">
