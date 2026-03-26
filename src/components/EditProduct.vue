@@ -8,39 +8,45 @@ const router = useRouter();
 const isEditing = ref(false);
 const isLoading = ref(true);
 const isSaving = ref(false);
-const errors = ref({}); // Used to store validation messages
+const errors = ref({});
 const successMessage = ref('');
-const rawFile = ref(null);
+
+// Track new files to upload vs existing URLs
+const rawFiles = ref([]);
+const previewUrls = ref([]);
 
 const form = ref({
     name: '',
     price: null,
     category: '',
     description: '',
-    url: ''
 });
 
-const initialData = ref({
-    name: '',
-    price: 0,
-    category: '',
-    description: '',
-    url: ''
-});
+const initialData = ref({});
 
 onMounted(async () => {
     try {
         const product = await AppwriteService.getProduct(route.params.id);
         if (product) {
+            // Parse the JSON string array from the database
+            let existingUrls = [];
+            try {
+                existingUrls = product.urls ? JSON.parse(product.urls) : [];
+            } catch (e) {
+                // Fallback if it was a single string previously
+                existingUrls = product.urls ? [product.urls] : [];
+            }
+
             const data = {
                 name: product.name,
                 price: product.price,
                 category: product.category,
                 description: product.description,
-                url: product.url
             };
-            initialData.value = { ...data };
+
+            initialData.value = { ...data, urls: JSON.stringify(existingUrls) };
             form.value = { ...data };
+            previewUrls.value = [...existingUrls];
         }
     } catch (error) {
         console.error("Product fetch failed:", error);
@@ -50,64 +56,54 @@ onMounted(async () => {
     }
 });
 
-// STRENGTHENED VALIDATION LOGIC
 const validateForm = () => {
     const newErrors = {};
-    const alphaRegex = /^[A-Za-z\s]+$/;
-
-    if (!form.value.name?.trim()) {
-        newErrors.name = "Product name is required";
-    }
-
-    if (form.value.price === null || form.value.price === undefined || form.value.price <= 0) {
-        newErrors.price = "Valid price is required";
-    }
-
-    if (!form.value.category?.trim()) {
-        newErrors.category = "Category is required";
-    } else if (!alphaRegex.test(form.value.category)) {
-        newErrors.category = "Category should only contain letters";
-    }
-
-    if (!form.value.description?.trim()) {
-        newErrors.description = "Description is required";
-    } else if (form.value.description.length < 10) {
+    if (!form.value.name?.trim()) newErrors.name = "Product name is required";
+    if (!form.value.price || form.value.price <= 0) newErrors.price = "Valid price is required";
+    if (!form.value.category?.trim()) newErrors.category = "Category is required";
+    if (!form.value.description?.trim() || form.value.description.length < 10) {
         newErrors.description = "Description must be at least 10 characters";
     }
-
-    if (!form.value.url) {
-        newErrors.url = "Product image is required";
-    }
+    if (previewUrls.value.length === 0) newErrors.urls = "At least one image is required";
 
     errors.value = newErrors;
     return Object.keys(newErrors).length === 0;
 };
 
 const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            canvas.toBlob((blob) => {
-                rawFile.value = new File([blob], "product.webp", { type: "image/webp" });
-                if (form.value.url?.startsWith('blob:')) URL.revokeObjectURL(form.value.url);
-                form.value.url = URL.createObjectURL(blob);
-                // Clear image error if file is selected
-                if (errors.value.url) delete errors.value.url;
-            }, 'image/webp', 0.8);
+    const selectedFiles = Array.from(event.target.files);
+    selectedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                    const processedFile = new File([blob], "product.webp", { type: "image/webp" });
+                    rawFiles.value.push(processedFile);
+                    previewUrls.value.push(URL.createObjectURL(blob));
+                    if (errors.value.urls) delete errors.value.urls;
+                }, 'image/webp', 0.8);
+            };
+            img.src = e.target.result;
         };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+    });
+};
+
+const removeImage = (index) => {
+    if (!isEditing.value) return;
+    const urlToRemove = previewUrls.value[index];
+    if (urlToRemove.startsWith('blob:')) {
+        // Find and remove from rawFiles if it's a new upload
+        const rawIndex = rawFiles.value.findIndex(f => URL.createObjectURL(f) === urlToRemove);
+        rawFiles.value.splice(rawIndex, 1);
+        URL.revokeObjectURL(urlToRemove);
+    }
+    previewUrls.value.splice(index, 1);
 };
 
 const handleSubmit = async () => {
@@ -116,20 +112,31 @@ const handleSubmit = async () => {
         return;
     }
 
-    // Stop submission if validation fails
     if (!validateForm()) return;
 
     isSaving.value = true;
     try {
         const updateData = {};
 
+        // Compare simple fields
         if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
         if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
         if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
         if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
 
-        if (rawFile.value) {
-            updateData.url = await AppwriteService.uploadFile(rawFile.value);
+        // Handle Images
+        // 1. Keep existing URLs that weren't deleted
+        const remainingExistingUrls = previewUrls.value.filter(url => !url.startsWith('blob:'));
+
+        // 2. Upload new files
+        const uploadPromises = rawFiles.value.map(file => AppwriteService.uploadFile(file));
+        const newUploadedUrls = await Promise.all(uploadPromises);
+
+        const finalUrlsArray = [...remainingExistingUrls, ...newUploadedUrls];
+        const finalUrlsJson = JSON.stringify(finalUrlsArray);
+
+        if (finalUrlsJson !== initialData.value.urls) {
+            updateData.urls = finalUrlsJson;
         }
 
         if (Object.keys(updateData).length > 0) {
@@ -139,17 +146,12 @@ const handleSubmit = async () => {
             successMessage.value = "No changes detected. Redirecting...";
         }
 
-        isEditing.value = false;
-
         setTimeout(() => {
-            const cleanCat = (updateData.category || initialData.value.category)
-                .toLowerCase()
-                .replace(/\s+/g, '-');
+            const cleanCat = (updateData.category || initialData.value.category).toLowerCase().replace(/\s+/g, '-');
             router.push(`/products/${cleanCat}/${route.params.id}`);
-        }, 2500);
+        }, 2000);
 
     } catch (error) {
-        console.error("Update failed:", error);
         errors.value.submit = error.message || "Update failed.";
     } finally {
         isSaving.value = false;
@@ -169,32 +171,29 @@ const handleSubmit = async () => {
             </h1>
         </header>
 
-        <!-- Success/Global Error Messages -->
         <div v-if="successMessage" class="mb-8 p-4 bg-green-50 border border-green-200 rounded-md text-center">
             <p class="text-green-600 text-[10px] font-bold uppercase tracking-widest">{{ successMessage }}</p>
-        </div>
-
-        <div v-if="errors.submit" class="mb-8 p-4 bg-red-50 border border-red-200 rounded-md text-center">
-            <p class="text-red-600 text-[10px] font-bold uppercase tracking-widest">{{ errors.submit }}</p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col gap-8">
             <!-- Image Field -->
             <div class="flex flex-col gap-4">
-                <label class="text-xs font-black uppercase tracking-wider text-black">Product Image</label>
-                <div class="aspect-square w-full overflow-hidden rounded-[10px] bg-gray-50 border-2 border-dashed flex items-center justify-center relative group"
-                    :class="errors.url ? 'border-red-500' : 'border-gray-200'">
-                    <img v-if="form.url" :src="form.url" class="w-full h-full object-cover" />
-                    <div v-if="isEditing"
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label for="file-upload"
-                            class="cursor-pointer bg-white text-black px-6 py-2 text-[10px] font-bold uppercase tracking-widest rounded-sm">Change
-                            Image</label>
+                <label class="text-xs font-black uppercase tracking-wider text-black">Product Images</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <div v-for="(url, index) in previewUrls" :key="index"
+                        class="relative aspect-square rounded-md overflow-hidden border">
+                        <img :src="url" class="w-full h-full object-cover" />
+                        <button v-if="isEditing" @click.prevent="removeImage(index)"
+                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">✕</button>
                     </div>
+                    <label v-if="isEditing" for="file-upload"
+                        class="aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50">
+                        <span class="text-[20px] text-gray-400">+</span>
+                    </label>
                 </div>
-                <p v-if="errors.url" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.url }}</p>
-                <input type="file" id="file-upload" class="hidden" accept="image/*" :disabled="!isEditing"
+                <input type="file" id="file-upload" class="hidden" accept="image/*" multiple
                     @change="handleFileChange" />
+                <p v-if="errors.urls" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.urls }}</p>
             </div>
 
             <!-- Name Field -->
@@ -203,44 +202,35 @@ const handleSubmit = async () => {
                 <input :disabled="!isEditing" v-model="form.name" type="text"
                     class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
                     :class="errors.name ? 'border-red-500' : 'border-gray-200'">
-                <p v-if="errors.name" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.name }}</p>
             </div>
 
+            <!-- Price and Category -->
             <div class="grid grid-cols-2 gap-6">
-                <!-- Price Field -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
-                    <input :disabled="!isEditing" v-model="form.price" type="number" step="0.01"
+                    <input :disabled="!isEditing" v-model="form.price" type="number"
                         class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
                         :class="errors.price ? 'border-red-500' : 'border-gray-200'">
-                    <p v-if="errors.price" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.price }}</p>
                 </div>
-
-                <!-- Category Field -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
                     <input :disabled="!isEditing" v-model="form.category" type="text"
                         class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
                         :class="errors.category ? 'border-red-500' : 'border-gray-200'">
-                    <p v-if="errors.category" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.category }}
-                    </p>
                 </div>
             </div>
 
-            <!-- Description Field -->
+            <!-- Description -->
             <div class="flex flex-col gap-3">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Description</label>
                 <textarea :disabled="!isEditing" v-model="form.description"
-                    class="border-2 h-32 p-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50 resize-none"
+                    class="border-2 h-48 p-4 focus:border-black outline-none transition-colors resize-none disabled:bg-gray-50"
                     :class="errors.description ? 'border-red-500' : 'border-gray-200'"></textarea>
-                <p v-if="errors.description" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.description
-                    }}</p>
             </div>
 
-            <!-- Submit Button -->
             <button type="submit" :disabled="isSaving"
-                class="bg-black text-white py-4 px-12 text-sm font-black tracking-widest hover:bg-gray-800 transition-all duration-300 w-full disabled:bg-gray-400">
-                {{ isSaving ? 'SAVING...' : (isEditing ? 'SAVE CHANGES' : 'EDIT PRODUCT') }}
+                class="bg-black text-white py-4 text-sm font-black tracking-widest hover:bg-gray-800 transition-all uppercase disabled:opacity-50">
+                {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Edit Product') }}
             </button>
         </form>
     </section>

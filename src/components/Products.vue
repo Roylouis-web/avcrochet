@@ -23,6 +23,17 @@ const sortOptions = [
 
 const totalPages = computed(() => Math.ceil(totalProducts.value / itemsPerPage));
 
+// Helper to get the first image from the JSON string array
+const getDisplayImage = (urlsData) => {
+    if (!urlsData) return '';
+    try {
+        const images = typeof urlsData === 'string' ? JSON.parse(urlsData) : urlsData;
+        return Array.isArray(images) && images.length > 0 ? images[0] : (typeof images === 'string' ? images : '');
+    } catch (e) {
+        return urlsData; // Fallback for legacy single-string URLs
+    }
+};
+
 const fetchProducts = async () => {
     loading.value = true;
     try {
@@ -31,14 +42,11 @@ const fetchProducts = async () => {
             Query.offset((currentPage.value - 1) * itemsPerPage)
         ];
 
-        // 1. SEARCH LOGIC: If 'q' exists in URL, apply filter
         const searchQuery = route.query.q;
         if (searchQuery && searchQuery.trim() !== '') {
-            // Note: Requires a Fulltext or String index on 'name' in Appwrite
             queries.push(Query.contains('name', searchQuery));
         }
 
-        // 2. SORT LOGIC
         if (currentSort.value === 'price-desc') queries.push(Query.orderDesc('price'));
         else if (currentSort.value === 'price-asc') queries.push(Query.orderAsc('price'));
         else if (currentSort.value === 'title-asc') queries.push(Query.orderAsc('name'));
@@ -46,10 +54,7 @@ const fetchProducts = async () => {
         else if (currentSort.value === 'date-asc') queries.push(Query.orderAsc('$createdAt'));
         else queries.push(Query.orderDesc('$createdAt'));
 
-        // 3. FETCH: AppwriteService.getProducts internally calls tables.listRows
         const response = await AppwriteService.getProducts(queries);
-
-        // FIX: TablesDB returns 'rows', not 'documents'
         const rows = response.rows || [];
 
         outfits.value = rows.map(row => ({
@@ -58,7 +63,8 @@ const fetchProducts = async () => {
             category: row.category,
             price: row.price,
             description: row.description,
-            url: row.url
+            // Process the display image from the urls field
+            displayImage: getDisplayImage(row.urls || row.url)
         }));
 
         totalProducts.value = response.total;
@@ -71,7 +77,6 @@ const fetchProducts = async () => {
     }
 };
 
-// Reset to page 1 and re-fetch when search query or sort changes
 watch(() => route.query.q, () => {
     currentPage.value = 1;
     fetchProducts();
@@ -112,6 +117,7 @@ onMounted(fetchProducts);
         <!-- Product Grid -->
         <section
             class="mx-auto w-[95%] md:w-[85%] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-12 gap-x-6 lg:gap-x-10 mt-12 mb-20">
+            <!-- Skeletons -->
             <template v-if="loading">
                 <div v-for="n in 8" :key="n" class="animate-pulse">
                     <div class="bg-gray-100 rounded-[10px] aspect-[4/5] w-full"></div>
@@ -122,6 +128,7 @@ onMounted(fetchProducts);
                 </div>
             </template>
 
+            <!-- Empty State -->
             <template v-else-if="outfits.length === 0">
                 <div class="text-center col-span-full py-32 flex flex-col items-center justify-center">
                     <p class="text-xl md:text-2xl font-bold text-[#3A3A3A] uppercase tracking-[0.2em]">No products found
@@ -131,11 +138,14 @@ onMounted(fetchProducts);
                 </div>
             </template>
 
+            <!-- Product Cards -->
             <template v-else>
                 <div v-for="outfit in outfits" :key="outfit.id" class="group cursor-pointer">
-                    <RouterLink :to="`/products/${outfit.category.toLowerCase()}/${outfit.id}`">
-                        <div class="overflow-hidden rounded-[10px] bg-gray-50 aspect-[4/5]">
-                            <img :src="outfit.url" :alt="outfit.name"
+                    <!-- Slugified category for cleaner routing -->
+                    <RouterLink :to="`/products/${outfit.category.toLowerCase().replace(/\s+/g, '-')}/${outfit.id}`">
+                        <div class="overflow-hidden rounded-[10px] bg-gray-50 aspect-[4/5] border border-gray-100">
+                            <!-- Use displayImage -->
+                            <img :src="outfit.displayImage" :alt="outfit.name"
                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-110 group-hover:opacity-90">
                         </div>
                         <div class="mt-4 text-left">
@@ -143,7 +153,8 @@ onMounted(fetchProducts);
                                 class="font-bold hover:underline underline-offset-4 truncate text-sm lg:text-base text-[#3A3A3A] uppercase tracking-wide">
                                 {{ outfit.name }}
                             </p>
-                            <p class="text-gray-500 font-bold text-sm mt-1">₦{{ outfit.price }}</p>
+                            <p class="text-gray-500 font-bold text-sm mt-1">₦{{ Number(outfit.price).toLocaleString() }}
+                            </p>
                         </div>
                     </RouterLink>
                 </div>
@@ -156,11 +167,9 @@ onMounted(fetchProducts);
                 class="text-[10px] font-bold uppercase tracking-widest disabled:opacity-20 hover:underline underline-offset-8">
                 PREV
             </button>
-
             <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 Page {{ currentPage }} / {{ totalPages }}
             </span>
-
             <button :disabled="currentPage === totalPages" @click="currentPage++; fetchProducts()"
                 class="text-[10px] font-bold uppercase tracking-widest disabled:opacity-20 hover:underline underline-offset-8">
                 NEXT

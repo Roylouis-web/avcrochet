@@ -7,63 +7,79 @@ const router = useRouter();
 const errors = ref({});
 const successMessage = ref('');
 const isPublishing = ref(false);
-const rawFile = ref(null);
+
+// Changed to arrays to hold multiple items
+const rawFiles = ref([]);
+const previewUrls = ref([]);
 
 const form = ref({
     name: '',
     price: null,
     category: '',
     description: '',
-    url: ''
 });
 
 const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+    const selectedFiles = Array.from(event.target.files);
+    if (!selectedFiles.length) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            canvas.toBlob((blob) => {
-                rawFile.value = new File([blob], `${form.value.name || 'product'}.webp`, { type: "image/webp" });
-                if (form.value.url?.startsWith('blob:')) URL.revokeObjectURL(form.value.url);
-                form.value.url = URL.createObjectURL(blob);
-                delete errors.value.url;
-            }, 'image/webp', 0.8);
+    selectedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    const processedFile = new File([blob], `${form.value.name || 'product'}-${Date.now()}.webp`, { type: "image/webp" });
+
+                    // Add to our arrays
+                    rawFiles.value.push(processedFile);
+                    previewUrls.value.push(URL.createObjectURL(blob));
+
+                    delete errors.value.submit;
+                }, 'image/webp', 0.8);
+            };
+            img.src = e.target.result;
         };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+    });
+};
+
+const removeImage = (index) => {
+    URL.revokeObjectURL(previewUrls.value[index]);
+    previewUrls.value.splice(index, 1);
+    rawFiles.value.splice(index, 1);
 };
 
 const handleCreate = async () => {
-    // UPDATED VALIDATION: Added description check
     if (
         !form.value.name?.trim() ||
         !form.value.price ||
-        !rawFile.value ||
+        rawFiles.value.length === 0 ||
         !form.value.category?.trim() ||
         !form.value.description?.trim()
     ) {
-        errors.value.submit = "Please fill in all fields (including description) and upload an image.";
+        errors.value.submit = "Please fill in all fields and upload at least one image.";
         return;
     }
 
     isPublishing.value = true;
     try {
-        const uploadedUrl = await AppwriteService.uploadFile(rawFile.value);
+        // Upload all files concurrently using Promise.all
+        const uploadPromises = rawFiles.value.map(file => AppwriteService.uploadFile(file));
+        const uploadedUrls = await Promise.all(uploadPromises);
 
         const productData = {
             name: form.value.name,
             price: Number(form.value.price),
             description: form.value.description,
             category: form.value.category.toLowerCase(),
-            url: uploadedUrl
+            // Save as a JSON string array
+            urls: JSON.stringify(uploadedUrls)
         };
 
         await AppwriteService.createProduct(productData);
@@ -93,21 +109,31 @@ const handleCreate = async () => {
             }}</p>
 
         <form @submit.prevent="handleCreate" class="flex flex-col gap-8">
-            <!-- Image Upload UI -->
+            <!-- Multiple Image Upload UI -->
             <div class="flex flex-col gap-4">
-                <div
-                    class="aspect-square w-full overflow-hidden rounded-[10px] bg-gray-50 border-2 border-dashed flex items-center justify-center relative group">
-                    <img v-if="form.url" :src="form.url" class="w-full h-full object-cover" />
-                    <div v-else class="text-center p-6 text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                        Upload Image</div>
-                    <div
-                        class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label for="file-upload"
-                            class="cursor-pointer bg-white text-black px-6 py-2 text-[10px] font-bold uppercase tracking-widest shadow-md">Select
-                            File</label>
+                <label class="text-xs font-black uppercase tracking-wider text-black">Product Images (Multiple allowed)
+                    *</label>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- Display Previews -->
+                    <div v-for="(url, index) in previewUrls" :key="index"
+                        class="relative aspect-square rounded-md overflow-hidden border">
+                        <img :src="url" class="w-full h-full object-cover" />
+                        <button @click.prevent="removeImage(index)"
+                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">✕</button>
                     </div>
+
+                    <!-- Upload Button Trigger -->
+                    <label for="file-upload"
+                        class="aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                        <span class="text-[20px] text-gray-400">+</span>
+                        <span class="text-[8px] font-bold uppercase text-gray-400">Add</span>
+                    </label>
                 </div>
-                <input type="file" id="file-upload" class="hidden" accept="image/*" @change="handleFileChange" />
+
+                <!-- Added 'multiple' attribute -->
+                <input type="file" id="file-upload" class="hidden" accept="image/*" multiple
+                    @change="handleFileChange" />
             </div>
 
             <!-- Name -->
