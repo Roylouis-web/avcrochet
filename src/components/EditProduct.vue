@@ -11,7 +11,6 @@ const isSaving = ref(false);
 const errors = ref({});
 const successMessage = ref('');
 
-// Track new files to upload vs existing URLs
 const rawFiles = ref([]);
 const previewUrls = ref([]);
 
@@ -19,6 +18,7 @@ const form = ref({
     name: '',
     price: null,
     category: '',
+    subCategory: '', // Added subCategory
     description: '',
 });
 
@@ -28,12 +28,10 @@ onMounted(async () => {
     try {
         const product = await AppwriteService.getProduct(route.params.id);
         if (product) {
-            // Parse the JSON string array from the database
             let existingUrls = [];
             try {
                 existingUrls = product.urls ? JSON.parse(product.urls) : [];
             } catch (e) {
-                // Fallback if it was a single string previously
                 existingUrls = product.urls ? [product.urls] : [];
             }
 
@@ -41,6 +39,7 @@ onMounted(async () => {
                 name: product.name,
                 price: product.price,
                 category: product.category,
+                subCategory: product.subCategory || '', // Loaded from Appwrite
                 description: product.description,
             };
 
@@ -61,6 +60,7 @@ const validateForm = () => {
     if (!form.value.name?.trim()) newErrors.name = "Product name is required";
     if (!form.value.price || form.value.price <= 0) newErrors.price = "Valid price is required";
     if (!form.value.category?.trim()) newErrors.category = "Category is required";
+    if (!form.value.subCategory) newErrors.subCategory = "Target is required"; // Added validation
     if (!form.value.description?.trim() || form.value.description.length < 10) {
         newErrors.description = "Description must be at least 10 characters";
     }
@@ -98,7 +98,6 @@ const removeImage = (index) => {
     if (!isEditing.value) return;
     const urlToRemove = previewUrls.value[index];
     if (urlToRemove.startsWith('blob:')) {
-        // Find and remove from rawFiles if it's a new upload
         const rawIndex = rawFiles.value.findIndex(f => URL.createObjectURL(f) === urlToRemove);
         rawFiles.value.splice(rawIndex, 1);
         URL.revokeObjectURL(urlToRemove);
@@ -118,17 +117,13 @@ const handleSubmit = async () => {
     try {
         const updateData = {};
 
-        // Compare simple fields
         if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
         if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
         if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
+        if (form.value.subCategory !== initialData.value.subCategory) updateData.subCategory = form.value.subCategory; // Compare subCategory
         if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
 
-        // Handle Images
-        // 1. Keep existing URLs that weren't deleted
         const remainingExistingUrls = previewUrls.value.filter(url => !url.startsWith('blob:'));
-
-        // 2. Upload new files
         const uploadPromises = rawFiles.value.map(file => AppwriteService.uploadFile(file));
         const newUploadedUrls = await Promise.all(uploadPromises);
 
@@ -164,7 +159,7 @@ const handleSubmit = async () => {
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
     </div>
 
-    <section v-else class="mx-auto w-[90%] sm:w-[65%] lg:w-[40%] mt-12 mb-20">
+    <section v-else class="mx-auto w-[90%] sm:w-[65%] lg:w-[45%] mt-12 mb-20">
         <header class="text-center mb-12">
             <h1 class="text-3xl font-bold uppercase tracking-tight text-[#3A3A3A]">
                 {{ isEditing ? 'Editing Product' : 'Product Details' }}
@@ -200,23 +195,42 @@ const handleSubmit = async () => {
             <div class="flex flex-col gap-3">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Product Name</label>
                 <input :disabled="!isEditing" v-model="form.name" type="text"
-                    class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
-                    :class="errors.name ? 'border-red-500' : 'border-gray-200'">
+                    class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
+                <p v-if="errors.name" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.name }}</p>
             </div>
 
-            <!-- Price and Category -->
-            <div class="grid grid-cols-2 gap-6">
+            <!-- Price, Category, and Target Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Price -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
-                    <input :disabled="!isEditing" v-model="form.price" type="number"
-                        class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
-                        :class="errors.price ? 'border-red-500' : 'border-gray-200'">
+                    <input :disabled="!isEditing" v-model="form.price" type="number" step="0.01"
+                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
+                    <p v-if="errors.price" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.price }}</p>
                 </div>
+
+                <!-- Category -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
                     <input :disabled="!isEditing" v-model="form.category" type="text"
-                        class="border-2 h-14 pl-4 focus:border-black outline-none transition-colors text-base disabled:bg-gray-50"
-                        :class="errors.category ? 'border-red-500' : 'border-gray-200'">
+                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
+                    <p v-if="errors.category" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.category }}
+                    </p>
+                </div>
+
+                <!-- Target (subCategory) -->
+                <div class="flex flex-col gap-3">
+                    <label class="text-xs font-black uppercase tracking-wider text-black">Target</label>
+                    <select :disabled="!isEditing" v-model="form.subCategory"
+                        class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer disabled:bg-gray-50">
+                        <option value="" disabled>Select</option>
+                        <option value="Women">Women</option>
+                        <option value="Men">Men</option>
+                        <option value="Kids">Kids</option>
+                        <option value="Unisex">Unisex</option>
+                    </select>
+                    <p v-if="errors.subCategory" class="text-red-500 text-[10px] font-bold uppercase">{{
+                        errors.subCategory }}</p>
                 </div>
             </div>
 
@@ -224,13 +238,14 @@ const handleSubmit = async () => {
             <div class="flex flex-col gap-3">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Description</label>
                 <textarea :disabled="!isEditing" v-model="form.description"
-                    class="border-2 h-48 p-4 focus:border-black outline-none transition-colors resize-none disabled:bg-gray-50"
-                    :class="errors.description ? 'border-red-500' : 'border-gray-200'"></textarea>
+                    class="border-gray-200 border-2 h-48 p-4 focus:border-black outline-none transition-colors resize-none disabled:bg-gray-50"></textarea>
+                <p v-if="errors.description" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.description
+                    }}</p>
             </div>
 
             <button type="submit" :disabled="isSaving"
                 class="bg-black text-white py-4 text-sm font-black tracking-widest hover:bg-gray-800 transition-all uppercase disabled:opacity-50">
-                {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Edit Product') }}
+                {{ isSaving ? 'Saving Changes...' : (isEditing ? 'Save Changes' : 'Edit Product') }}
             </button>
         </form>
     </section>

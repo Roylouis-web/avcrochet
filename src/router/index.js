@@ -8,7 +8,6 @@ import FAQ from '@/components/FAQ.vue'
 import Orders from '@/components/Orders.vue'
 import Register from '@/components/Register.vue'
 import ResetPassword from '@/components/ResetPassword.vue'
-import ProductsCategory from '@/components/ProductsCategory.vue'
 import ProductDetails from '@/components/ProductDetails.vue'
 import EditProduct from '@/components/EditProduct.vue'
 import CreateProduct from '@/components/CreateProduct.vue'
@@ -20,7 +19,6 @@ import Checkout from '@/components/Checkout.vue'
 import ForgotPassword from '@/components/ForgotPassword.vue'
 import AppwriteService from '@/services/AppwriteService';
 import RefundPolicy from '@/components/RefundPolicy.vue'
-import Collections from '@/components/Collections.vue'
 import About from '@/components/About.vue'
 
 const router = createRouter({
@@ -37,12 +35,6 @@ const router = createRouter({
       name: 'ProductDetail',
       component: ProductDetails,
       meta: { requiresAuth: true }
-    },
-    {
-      path: '/products/:category',
-      name: 'Category',
-      component: ProductsCategory,
-      meta: { requiresAuth: false }
     },
     {
       path: '/products',
@@ -132,12 +124,6 @@ const router = createRouter({
       path: '/refund-policy',
       name: 'RefundPolicy',
       component: RefundPolicy,
-      meta: { requiresAuth: false }
-    },
-    {
-      path: '/collections',
-      name: 'Collections',
-      component: Collections,
       meta: { requiresAuth: false }
     },
     {

@@ -98,6 +98,7 @@ const handleLogout = async () => {
   }
 };
 </script>
+
 <template>
   <header class="relative bg-black z-50 text-[#FFD700]">
     <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-900">
@@ -182,6 +183,13 @@ const handleLogout = async () => {
             class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
             <li>{{ link }}</li>
           </RouterLink>
+
+          <!-- Added Create link for Admin in Mobile Menu -->
+          <RouterLink v-if="isAdmin" to="/products/create" @click="isMenuOpen = false"
+            class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
+            <li>Create</li>
+          </RouterLink>
+
           <li v-if="user" @click="handleLogout"
             class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-red-500 cursor-pointer">
             Logout

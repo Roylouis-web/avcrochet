@@ -24,7 +24,7 @@
                 From my hands to your heart
             </p>
 
-            <RouterLink to="/collections"
+            <RouterLink to="/products"
                 class="animate-fade-in-delayed group relative bg-[#D4AF37] hover:bg-[#FFD700] px-16 py-5 text-sm font-black uppercase tracking-[0.4em] text-white transition-all duration-500 shadow-2xl hover:scale-105">
                 Shop Now
             </RouterLink>
