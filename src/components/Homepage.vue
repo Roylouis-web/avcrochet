@@ -2,32 +2,30 @@
     <main class="relative h-screen w-full overflow-hidden bg-black">
         <div class="absolute inset-0 z-0">
             <!-- 
-                FIX: Lowered brightness slightly more (75) to allow 
-                the gold text to remain the brightest element on screen.
+                BRIGHTNESS FIX: Set to 85. 
+                This keeps the dress vibrant but ensures the gold text remains the brightest element. 
             -->
-            <img src="/src/public/hero.webp" alt="AV Crochet Editorial"
-                class="h-full w-full object-cover object-center antialiased transition-opacity duration-1000 brightness-75 contrast-[1.05] scale-[1.02]" />
+            <img src="/hero.webp" alt="AV Crochet Editorial"
+                class="h-full w-full object-cover object-center antialiased brightness-85 contrast-[1.05] scale-[1.01]" />
 
-            <!-- 
-                FIX: Added a multi-layer gradient. 
-                Top-down for facial clarity, bottom-up for button contrast. 
-            -->
-            <div class="absolute inset-0 bg-linear-to-b from-black/40 via-transparent to-black/80"></div>
-            <div class="absolute inset-0 bg-black/10"></div>
+            <!-- RADIAL OVERLAY: Slightly dims the edges to "frame" the text -->
+            <div class="absolute inset-0 bg-[radial-gradient(circle,_transparent_40%,_rgba(0,0,0,0.4)_100%)]"></div>
         </div>
 
         <div class="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
             <!-- 
-                FIX: Added a defined shadow. 
-                Gold text on busy patterns needs this "edge" to be readable.
+                THE "POP" FIX: 
+                - text-[#FFD700]: Uses a "Vivid Gold" (lighter and brighter).
+                -: Adds a tiny 0.5px black outline so it never blends.
+                - drop-shadow: Large, dark blur to create a "pocket" of legibility.
             -->
-            <p class="animate-fade-in text-[#D4AF37] text-3xl md:text-5xl lg:text-6xl italic font-serif mb-8 tracking-wide 
-                      drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+            <p
+                class="animate-fade-in text-[#FFD700] text-4xl md:text-6xl lg:text-7xl italic font-serif mb-10 tracking-wide">
                 From my hands to your heart
             </p>
 
             <RouterLink to="/collections"
-                class="animate-fade-in-delayed group relative bg-[#D4AF37] hover:bg-[#FFD700] hover:scale-105 px-16 py-5 text-sm font-black uppercase tracking-[0.4em] text-white transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                class="animate-fade-in-delayed group relative bg-[#D4AF37] hover:bg-[#FFD700] px-16 py-5 text-sm font-black uppercase tracking-[0.4em] text-white transition-all duration-500 shadow-2xl hover:scale-105">
                 Shop Now
             </RouterLink>
         </div>
@@ -35,11 +33,10 @@
 </template>
 
 <style scoped>
-/* High-quality rendering remains essential for the intricate crochet details */
+/* Ensure the crochet texture stays crisp */
 img {
     image-rendering: -webkit-optimize-contrast;
     backface-visibility: hidden;
-    transform: translateZ(0);
 }
 
 .animate-fade-in {

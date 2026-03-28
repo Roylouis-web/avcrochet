@@ -103,7 +103,7 @@ const handleLogout = async () => {
     <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-900">
       <RouterLink to="/" class="hover:opacity-80 transition-opacity">
         <!-- FIXED PATH: Removed /src/public/ so it loads from public folder -->
-        <img src="/src/public/logo.jpg" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
+        <img src="/logo.jpg" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
       </RouterLink>
 
       <!-- Desktop Navigation -->
