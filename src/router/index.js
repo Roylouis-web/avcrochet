@@ -19,13 +19,15 @@ import EditUser from '@/components/EditUser.vue'
 import Checkout from '@/components/Checkout.vue'
 import ForgotPassword from '@/components/ForgotPassword.vue'
 import AppwriteService from '@/services/AppwriteService';
+import RefundPolicy from '@/components/RefundPolicy.vue'
+import Collections from '@/components/Collections.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'Home',
+      name: 'HomePage',
       component: HomePage,
       meta: { requiresAuth: false }
     },
@@ -117,6 +119,18 @@ const router = createRouter({
       path: '/forgot_password',
       name: 'ForgotPassword',
       component: ForgotPassword,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/refund-policy',
+      name: 'RefundPolicy',
+      component: RefundPolicy,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/collections',
+      name: 'Collections',
+      component: Collections,
       meta: { requiresAuth: false }
     },
     {
