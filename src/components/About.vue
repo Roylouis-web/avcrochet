@@ -43,13 +43,13 @@
             <section class="space-y-6">
                 <h2 class="text-2xl font-bold uppercase tracking-tight text-black">Behind the Hook</h2>
                 <div class="flex flex-col md:flex-row gap-8 items-center">
-                    <div
-                        class="w-full md:w-1/3 aspect-square bg-gray-100 flex items-center justify-center border border-gray-200">
-                        <!-- Placeholder for your photo -->
-                        <span class="text-gray-400 uppercase text-xs tracking-widest">[ Artist Photo ]</span>
+                    <div class="w-full md:w-1/3 aspect-[4/5] overflow-hidden bg-gray-100 border border-gray-200">
+                        <!-- Replaced placeholder with your image -->
+                        <img src="/my_hero.webp" alt="The Creator of Avcroslay"
+                            class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 ease-in-out" />
                     </div>
                     <div class="w-full md:w-2/3">
-                        <p class="mb-4">
+                        <p class="mb-4 text-gray-700 italic">
                             "I created Avcroslay to bridge the gap between traditional craft and contemporary style. My
                             goal is to provide fellow creators with the patterns they need to build their own wardrobe,
                             while offering finished pieces to those who value handmade art."
@@ -68,13 +68,9 @@
                         digital patterns, we're glad you're part of our community.
                     </p>
                     <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                        <RouterLink to="/shop"
+                        <RouterLink to="/collections"
                             class="bg-[#D4AF37] text-black px-8 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors">
                             Shop Collection
-                        </RouterLink>
-                        <RouterLink to="/patterns"
-                            class="border border-white text-white px-8 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-colors">
-                            View Patterns
                         </RouterLink>
                     </div>
                 </div>
