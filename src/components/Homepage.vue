@@ -6,7 +6,7 @@
               - Use 'antialiased' to smooth edges.
               - Added 'brightness-110' and 'contrast-105' to make the image "pop" like professional photography.
             -->
-            <img src="/src/public/hero2.webp" alt="AV Crochet Editorial"
+            <img src="/hero2.webp" alt="AV Crochet Editorial"
                 class="h-full w-full object-cover object-center antialiased transition-opacity duration-1000 brightness-105 contrast-[1.02] scale-[1.01]" />
 
             <!-- GRADIENT OVERLAY: Creates depth and makes text more readable than a flat overlay -->
