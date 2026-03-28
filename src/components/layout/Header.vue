@@ -6,16 +6,15 @@ import { Query } from 'appwrite';
 import SearchBar from './SearchBar.vue';
 
 const router = useRouter();
-const route = useRoute(); // Initialize route
+const route = useRoute();
 const isMenuOpen = ref(false);
 const isVisible = ref(false);
 const searchInput = ref(null);
 
-// User and Cart state
 const user = ref(null);
 const isAdmin = ref(false);
 const cartCount = ref(0);
-let unsubscribe = null; // Store the realtime listener
+let unsubscribe = null;
 
 const updateCartCount = async (userId) => {
   try {
@@ -32,7 +31,6 @@ const updateCartCount = async (userId) => {
 const checkAuth = async () => {
   const fullUser = await AppwriteService.getFullUser();
 
-  // Cleanup old listener if it exists before re-binding
   if (unsubscribe) {
     unsubscribe();
     unsubscribe = null;
@@ -44,7 +42,6 @@ const checkAuth = async () => {
 
     if (!isAdmin.value) {
       updateCartCount(fullUser.$id);
-
       const channel = `databases.${AppwriteService.dbId}.collections.${AppwriteService.cols.carts}.documents`;
       unsubscribe = AppwriteService.client.subscribe(channel, (response) => {
         if (response.events.some(e => e.includes('.create') || e.includes('.delete'))) {
@@ -53,14 +50,12 @@ const checkAuth = async () => {
       });
     }
   } else {
-    // Reset state if no user found
     user.value = null;
     isAdmin.value = false;
     cartCount.value = 0;
   }
 };
 
-// Re-check auth status every time the URL changes
 watch(() => route.path, () => {
   checkAuth();
 }, { immediate: true });
@@ -68,7 +63,6 @@ watch(() => route.path, () => {
 onUnmounted(() => {
   if (unsubscribe) unsubscribe();
 });
-
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
@@ -86,7 +80,7 @@ const toggleSearch = async () => {
 
 const handleLogout = async () => {
   try {
-    if (unsubscribe) unsubscribe(); // Kill listener on logout
+    if (unsubscribe) unsubscribe();
     await AppwriteService.logout();
     user.value = null;
     isAdmin.value = false;
@@ -103,7 +97,6 @@ const handleLogout = async () => {
   <header class="relative bg-black z-50 text-[#FFD700]">
     <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-900">
       <RouterLink to="/" class="hover:opacity-80 transition-opacity">
-        <!-- FIXED PATH: Removed /src/public/ so it loads from public folder -->
         <img src="/logo.jpg" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
       </RouterLink>
 
@@ -126,6 +119,12 @@ const handleLogout = async () => {
           class="opacity-70 hover:opacity-100 transition-opacity pb-1">
           Profile
         </RouterLink>
+
+        <!-- Desktop Logout (MD Screens) -->
+        <button v-if="user" @click="handleLogout"
+          class="opacity-70 hover:opacity-100 transition-opacity pb-1 text-red-500 uppercase">
+          Logout
+        </button>
       </div>
 
       <div class="flex items-center gap-5">
@@ -170,7 +169,6 @@ const handleLogout = async () => {
       </div>
     </nav>
 
-    <!-- Restored SearchBar -->
     <SearchBar :isVisible="isVisible" @close="isVisible = false" />
 
     <!-- Mobile Menu -->
@@ -184,7 +182,6 @@ const handleLogout = async () => {
             <li>{{ link }}</li>
           </RouterLink>
 
-          <!-- Added Create link for Admin in Mobile Menu -->
           <RouterLink v-if="isAdmin" to="/products/create" @click="isMenuOpen = false"
             class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
             <li>Create</li>
@@ -199,18 +196,3 @@ const handleLogout = async () => {
     </Transition>
   </header>
 </template>
-
-
-<style scoped>
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 500px;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-</style>

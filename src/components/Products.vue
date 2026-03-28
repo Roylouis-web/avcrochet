@@ -24,34 +24,16 @@ const subCategoryOptions = [
 
 const categoryOptions = [
     { label: 'All Categories', value: '' },
-    { label: 'Utility Items', value: 'Utility Items' },
-    { label: 'Seasonal Items', value: 'Seasonal Items' },
-    { label: 'Keychains & Charms', value: 'Keychains & Charms' },
-    { label: 'Home Decor', value: 'Home Decor' },
-    { label: 'Bags & Purses', value: 'Bags & Purses' },
-    { label: 'Jewelry', value: 'Jewelry' },
-    { label: 'Hair Accessories', value: 'Hair Accessories' },
-    { label: 'Hoodies', value: 'Hoodies' },
-    { label: 'Sweaters', value: 'Sweaters' },
-    { label: 'Skirts', value: 'Skirts' },
+    { label: 'Beanies', value: 'Beanies' },
+    { label: 'Bucket Hats', value: 'Bucket Hats' },
+    { label: 'Gowns', value: 'Gowns' },
     { label: 'Dresses', value: 'Dresses' },
-    { label: 'Tops', value: 'Tops' },
-    { label: 'Shorts', value: 'Shorts' },
-    { label: 'Beach wear', value: 'Beach wear' },
-    { label: 'Bikini', value: 'Bikini' },
-    { label: 'Trousers', value: 'Trousers' },
-    { label: 'T-shirt', value: 'T-shirt' },
-    { label: 'Vest', value: 'Vest' },
-    { label: 'Jumpsuit', value: 'Jumpsuit' },
-    { label: 'Hat', value: 'Hat' },
-    { label: 'Two-Pieces', value: 'Two-Pieces' }
+    { label: 'Bikinis', value: 'Bikinis' }
 ];
 
 const sortOptions = [
     { label: 'Newest First', value: 'date-desc' },
     { label: 'Oldest First', value: 'date-asc' },
-    { label: 'Price: High-Low', value: 'price-desc' },
-    { label: 'Price: Low-High', value: 'price-asc' },
     { label: 'Name: A-Z', value: 'title-asc' }
 ];
 
@@ -80,23 +62,32 @@ const fetchProducts = async () => {
         if (currentSubCategory.value) queries.push(Query.equal('subCategory', currentSubCategory.value));
         if (currentCategory.value) queries.push(Query.equal('category', currentCategory.value));
 
-        // Sort Logic
-        if (currentSort.value === 'price-desc') queries.push(Query.orderDesc('price'));
-        else if (currentSort.value === 'price-asc') queries.push(Query.orderAsc('price'));
-        else if (currentSort.value === 'title-asc') queries.push(Query.orderAsc('name'));
+        // Sort Logic (Note: Appwrite cannot sort by nested JSON values, so price sorting is removed from queries)
+        if (currentSort.value === 'title-asc') queries.push(Query.orderAsc('name'));
         else if (currentSort.value === 'date-asc') queries.push(Query.orderAsc('$createdAt'));
         else queries.push(Query.orderDesc('$createdAt'));
 
         const response = await AppwriteService.getProducts(queries);
         const rows = response.documents || response.rows || [];
 
-        outfits.value = rows.map(row => ({
-            id: row.$id,
-            name: row.name,
-            category: row.category,
-            price: row.price,
-            displayImage: getDisplayImage(row.urls || row.url)
-        }));
+        outfits.value = rows.map(row => {
+            let mPrice = 0;
+            try {
+                // Parse the sizes JSON string and extract 'M'
+                const sizes = typeof row.sizes === 'string' ? JSON.parse(row.sizes) : row.sizes;
+                mPrice = sizes?.['M'] || 0;
+            } catch (e) {
+                console.error("Price parsing error", e);
+            }
+
+            return {
+                id: row.$id,
+                name: row.name,
+                category: row.category,
+                price: mPrice, // Extracted from sizes['M']
+                displayImage: getDisplayImage(row.urls || row.url)
+            };
+        });
 
         totalProducts.value = response.total;
     } catch (error) {
@@ -194,32 +185,14 @@ onMounted(fetchProducts);
                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
                         </div>
                         <div class="mt-4 text-left">
-                            <p
-                                class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase tracking-wide">
-                                {{ outfit.name }}</p>
-                            <p class="text-gray-500 font-bold text-sm mt-1 italic">₦{{
-                                Number(outfit.price).toLocaleString() }}</p>
+                            <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
+                                outfit.name }}</p>
+                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">${{
+                                outfit.price }}</p>
                         </div>
                     </RouterLink>
                 </div>
             </template>
         </section>
-
-        <!-- Pagination -->
-        <footer v-if="!loading && totalPages > 1" class="flex justify-center items-center gap-12 mb-32">
-            <button :disabled="currentPage === 1"
-                @click="currentPage--; fetchProducts(); window.scrollTo({ top: 0, behavior: 'smooth' })"
-                class="text-[10px] font-bold uppercase tracking-[0.3em] disabled:opacity-20 hover:text-[#D4AF37]">
-                &larr; Prev
-            </button>
-            <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-300">
-                {{ currentPage }} / {{ totalPages }}
-            </span>
-            <button :disabled="currentPage === totalPages"
-                @click="currentPage++; fetchProducts(); window.scrollTo({ top: 0, behavior: 'smooth' })"
-                class="text-[10px] font-bold uppercase tracking-[0.3em] disabled:opacity-20 hover:text-[#D4AF37]">
-                Next &rarr;
-            </button>
-        </footer>
     </section>
 </template>

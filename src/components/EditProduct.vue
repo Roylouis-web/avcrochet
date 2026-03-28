@@ -14,7 +14,8 @@ const successMessage = ref('');
 const rawFiles = ref([]);
 const previewUrls = ref([]);
 
-// Updated Category List
+const sizeList = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
 const categories = [
     "Utility Items", "Seasonal Items", "Keychains & Charms", "Home Decor",
     "Bags & Purses", "Jewelry", "Hair Accessories", "Hoodies",
@@ -25,10 +26,11 @@ const categories = [
 
 const form = ref({
     name: '',
-    price: null,
     category: '',
     subCategory: '',
     description: '',
+    // Use an object for mapping sizes to prices directly
+    sizes: sizeList.reduce((acc, s) => ({ ...acc, [s]: null }), {})
 });
 
 const initialData = ref({});
@@ -38,22 +40,39 @@ onMounted(async () => {
         const product = await AppwriteService.getProduct(route.params.id);
         if (product) {
             let existingUrls = [];
+            let existingSizesObj = {};
+
             try {
                 existingUrls = product.urls ? JSON.parse(product.urls) : [];
-            } catch (e) {
-                existingUrls = product.urls ? [product.urls] : [];
-            }
+            } catch (e) { existingUrls = [product.urls]; }
+
+            try {
+                // Parse the existing mapping object (e.g. {"S": 100, "M": 200})
+                existingSizesObj = product.sizes ? JSON.parse(product.sizes) : {};
+            } catch (e) { existingSizesObj = {}; }
+
+            // Map values into our standard XS-XXL list for the form
+            const mergedSizes = sizeList.reduce((acc, s) => {
+                acc[s] = existingSizesObj[s] !== undefined ? existingSizesObj[s] : null;
+                return acc;
+            }, {});
 
             const data = {
                 name: product.name,
-                price: product.price,
-                category: product.category, // Will match one from the list
+                category: product.category,
                 subCategory: product.subCategory || '',
                 description: product.description,
+                sizes: mergedSizes
             };
 
-            initialData.value = { ...data, urls: JSON.stringify(existingUrls) };
-            form.value = { ...data };
+            // Save state for comparison later
+            initialData.value = {
+                ...data,
+                urlsJson: JSON.stringify(existingUrls),
+                sizesJson: JSON.stringify(existingSizesObj)
+            };
+
+            form.value = JSON.parse(JSON.stringify(data));
             previewUrls.value = [...existingUrls];
         }
     } catch (error) {
@@ -66,10 +85,13 @@ onMounted(async () => {
 
 const validateForm = () => {
     const newErrors = {};
+    const filledEntries = Object.entries(form.value.sizes).filter(([_, price]) => price !== null && price !== '');
+
     if (!form.value.name?.trim()) newErrors.name = "Product name is required";
-    if (!form.value.price || form.value.price <= 0) newErrors.price = "Valid price is required";
-    if (!form.value.category) newErrors.category = "Category is required"; // Select validation
+    if (!form.value.category) newErrors.category = "Category is required";
     if (!form.value.subCategory) newErrors.subCategory = "Target is required";
+    if (filledEntries.length === 0) newErrors.submit = "At least one size must have a price";
+    if (filledEntries.some(([_, price]) => price < 0)) newErrors.submit = "Prices cannot be less than zero";
     if (!form.value.description?.trim() || form.value.description.length < 10) {
         newErrors.description = "Description must be at least 10 characters";
     }
@@ -94,7 +116,6 @@ const handleFileChange = (event) => {
                     const processedFile = new File([blob], "product.webp", { type: "image/webp" });
                     rawFiles.value.push(processedFile);
                     previewUrls.value.push(URL.createObjectURL(blob));
-                    if (errors.value.urls) delete errors.value.urls;
                 }, 'image/webp', 0.8);
             };
             img.src = e.target.result;
@@ -126,11 +147,18 @@ const handleSubmit = async () => {
     try {
         const updateData = {};
 
+        // Clean the mapping object (remove nulls) for saving
+        const filledSizes = Object.fromEntries(
+            Object.entries(form.value.sizes).filter(([_, price]) => price !== null && price !== '')
+        );
+        const finalSizesJson = JSON.stringify(filledSizes);
+
         if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
-        if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
         if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
         if (form.value.subCategory !== initialData.value.subCategory) updateData.subCategory = form.value.subCategory;
         if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
+
+        if (finalSizesJson !== initialData.value.sizesJson) updateData.sizes = finalSizesJson;
 
         const remainingExistingUrls = previewUrls.value.filter(url => !url.startsWith('blob:'));
         const uploadPromises = rawFiles.value.map(file => AppwriteService.uploadFile(file));
@@ -139,20 +167,18 @@ const handleSubmit = async () => {
         const finalUrlsArray = [...remainingExistingUrls, ...newUploadedUrls];
         const finalUrlsJson = JSON.stringify(finalUrlsArray);
 
-        if (finalUrlsJson !== initialData.value.urls) {
-            updateData.urls = finalUrlsJson;
-        }
+        if (finalUrlsJson !== initialData.value.urlsJson) updateData.urls = finalUrlsJson;
 
         if (Object.keys(updateData).length > 0) {
             await AppwriteService.editProduct(route.params.id, updateData);
-            successMessage.value = "Changes saved! Redirecting...";
+            successMessage.value = "Changes saved!";
         } else {
-            successMessage.value = "No changes detected. Redirecting...";
+            successMessage.value = "No changes detected.";
         }
 
         setTimeout(() => {
-            const cleanCat = (updateData.category || initialData.value.category).toLowerCase().replace(/\s+/g, '-');
-            router.push(`/products/${cleanCat}/${route.params.id}`);
+            const cat = (updateData.category || initialData.value.category).toLowerCase().replace(/\s+/g, '-');
+            router.push(`/products/${cat}/${route.params.id}`);
         }, 2000);
 
     } catch (error) {
@@ -168,7 +194,7 @@ const handleSubmit = async () => {
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
     </div>
 
-    <section v-else class="mx-auto w-[90%] sm:w-[65%] lg:w-[45%] mt-12 mb-20">
+    <section v-else class="mx-auto w-[90%] sm:w-[85%] lg:w-[50%] mt-12 mb-20 text-left">
         <header class="text-center mb-12">
             <h1 class="text-3xl font-bold uppercase tracking-tight text-[#3A3A3A]">
                 {{ isEditing ? 'Editing Product' : 'Product Details' }}
@@ -176,14 +202,19 @@ const handleSubmit = async () => {
         </header>
 
         <div v-if="successMessage" class="mb-8 p-4 bg-green-50 border border-green-200 rounded-md text-center">
-            <p class="text-green-600 text-[10px] font-bold uppercase tracking-widest">{{ successMessage }}</p>
+            <p class="text-green-600 text-xs font-bold uppercase tracking-widest">{{ successMessage }}</p>
         </div>
+
+        <p v-if="errors.submit"
+            class="mb-6 text-center text-red-500 text-[10px] font-bold uppercase tracking-widest border border-red-100 p-3">
+            {{ errors.submit }}
+        </p>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col gap-8">
             <!-- Image Field -->
             <div class="flex flex-col gap-4">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Product Images</label>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     <div v-for="(url, index) in previewUrls" :key="index"
                         class="relative aspect-square rounded-md overflow-hidden border">
                         <img :src="url" class="w-full h-full object-cover" />
@@ -195,69 +226,66 @@ const handleSubmit = async () => {
                         <span class="text-[20px] text-gray-400">+</span>
                     </label>
                 </div>
-                <input type="file" id="file-upload" class="hidden" accept="image/*" multiple
+                <input v-if="isEditing" type="file" id="file-upload" class="hidden" accept="image/*" multiple
                     @change="handleFileChange" />
-                <p v-if="errors.urls" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.urls }}</p>
             </div>
 
-            <!-- Name Field -->
-            <div class="flex flex-col gap-3">
-                <label class="text-xs font-black uppercase tracking-wider text-black">Product Name</label>
-                <input :disabled="!isEditing" v-model="form.name" type="text"
-                    class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
-                <p v-if="errors.name" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.name }}</p>
-            </div>
-
-            <!-- Price, Category, and Target Row -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Price -->
+            <!-- Basic Info Grid -->
+            <div class="grid md:grid-cols-2 gap-6">
                 <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Price (₦)</label>
-                    <input :disabled="!isEditing" v-model="form.price" type="number" step="0.01"
-                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
-                    <p v-if="errors.price" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.price }}</p>
+                    <label class="text-xs font-black uppercase tracking-wider text-black">Product Name *</label>
+                    <input v-model="form.name" :disabled="!isEditing" type="text"
+                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none disabled:bg-gray-50">
+                    <p v-if="errors.name" class="text-red-500 text-[10px] uppercase font-bold">{{ errors.name }}</p>
                 </div>
 
-                <!-- Category Select -->
-                <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
-                    <select :disabled="!isEditing" v-model="form.category" required
-                        class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer disabled:bg-gray-50">
-                        <option value="" disabled>Select Category</option>
-                        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-                    </select>
-                    <p v-if="errors.category" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.category }}
-                    </p>
-                </div>
-
-                <!-- Target Select -->
-                <div class="flex flex-col gap-3">
-                    <label class="text-xs font-black uppercase tracking-wider text-black">Target</label>
-                    <select :disabled="!isEditing" v-model="form.subCategory" required
-                        class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer disabled:bg-gray-50">
-                        <option value="" disabled>Select Target</option>
-                        <option value="Women">Women</option>
-                        <option value="Men">Men</option>
-                        <option value="Kids">Kids</option>
-                        <option value="Unisex">Unisex</option>
-                    </select>
-                    <p v-if="errors.subCategory" class="text-red-500 text-[10px] font-bold uppercase">{{
-                        errors.subCategory }}</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-3">
+                        <label class="text-xs font-black uppercase tracking-wider text-black">Category *</label>
+                        <select v-model="form.category" :disabled="!isEditing"
+                            class="border-gray-200 border-2 h-14 px-4 bg-white outline-none focus:border-black disabled:bg-gray-50">
+                            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <label class="text-xs font-black uppercase tracking-wider text-black">Target *</label>
+                        <select v-model="form.subCategory" :disabled="!isEditing"
+                            class="border-gray-200 border-2 h-14 px-4 bg-white outline-none focus:border-black disabled:bg-gray-50">
+                            <option value="Women">Women</option>
+                            <option value="Men">Men</option>
+                            <option value="Kids">Kids</option>
+                            <option value="Unisex">Unisex</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <!-- Description -->
             <div class="flex flex-col gap-3">
-                <label class="text-xs font-black uppercase tracking-wider text-black">Description</label>
-                <textarea :disabled="!isEditing" v-model="form.description"
-                    class="border-gray-200 border-2 h-48 p-4 focus:border-black outline-none transition-colors resize-none disabled:bg-gray-50"></textarea>
-                <p v-if="errors.description" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.description
+                <label class="text-xs font-black uppercase tracking-wider text-black">Description *</label>
+                <textarea v-model="form.description" :disabled="!isEditing" rows="4"
+                    class="border-gray-200 border-2 p-4 focus:border-black outline-none resize-none disabled:bg-gray-50"></textarea>
+                <p v-if="errors.description" class="text-red-500 text-[10px] uppercase font-bold">{{ errors.description
                     }}</p>
             </div>
 
+            <!-- SIZES & PRICES GRID -->
+            <div class="border-t pt-8">
+                <label class="text-xs font-black uppercase tracking-wider text-black block mb-6">Pricing per Size
+                    (₦)</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                    <div v-for="size in sizeList" :key="size" class="flex flex-col gap-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ size }}
+                            Price</label>
+                        <input v-model="form.sizes[size]" :disabled="!isEditing" type="number" placeholder="0.00"
+                            class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none disabled:bg-gray-50 transition-colors">
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" :disabled="isSaving"
-                class="bg-black text-white py-4 text-sm font-black tracking-widest hover:bg-gray-800 transition-all uppercase disabled:opacity-50">
-                {{ isSaving ? 'Saving Changes...' : (isEditing ? 'Save Changes' : 'Edit Product') }}
+                class="mt-8 bg-black text-white h-16 font-black uppercase tracking-[0.2em] text-sm hover:bg-gray-800 transition-colors disabled:bg-gray-400">
+                {{ !isEditing ? 'Edit Product' : (isSaving ? 'Saving...' : 'Save Changes') }}
             </button>
         </form>
     </section>
