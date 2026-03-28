@@ -16,7 +16,7 @@
                     1. Overview
                 </h2>
                 <p>
-                    At <strong>AV Crochet</strong>, we take immense pride in the craftsmanship of our handmade items.
+                    At <strong>Avcroslay</strong>, we take immense pride in the craftsmanship of our handmade items.
                     Because each piece is made to order or created in small batches, we have specific guidelines
                     regarding returns and refunds to ensure the sustainability of our small business.
                 </p>

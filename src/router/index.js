@@ -21,6 +21,7 @@ import ForgotPassword from '@/components/ForgotPassword.vue'
 import AppwriteService from '@/services/AppwriteService';
 import RefundPolicy from '@/components/RefundPolicy.vue'
 import Collections from '@/components/Collections.vue'
+import About from '@/components/About.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -107,6 +108,12 @@ const router = createRouter({
       path: '/register',
       name: 'Register',
       component: Register,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/about',
+      name: 'About',
+      component: About,
       meta: { requiresAuth: false }
     },
     {
