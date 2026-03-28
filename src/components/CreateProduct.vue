@@ -15,9 +15,18 @@ const form = ref({
     name: '',
     price: null,
     category: '',
-    subCategory: '', // Added for Appwrite
+    subCategory: '',
     description: '',
 });
+
+// Category list for the dropdown
+const categories = [
+    "Utility Items", "Seasonal Items", "Keychains & Charms", "Home Decor",
+    "Bags & Purses", "Jewelry", "Hair Accessories", "Hoodies",
+    "Sweaters", "Skirts", "Dresses", "Tops", "Shorts",
+    "Beach wear", "Bikini", "Trousers", "T-shirt", "Vest",
+    "Jumpsuit", "Hat", "Two-Pieces"
+];
 
 const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files);
@@ -57,8 +66,8 @@ const handleCreate = async () => {
         !form.value.name?.trim() ||
         !form.value.price ||
         rawFiles.value.length === 0 ||
-        !form.value.category?.trim() ||
-        !form.value.subCategory || // Added validation
+        !form.value.category ||
+        !form.value.subCategory ||
         !form.value.description?.trim()
     ) {
         errors.value.submit = "Please fill in all fields and upload at least one image.";
@@ -74,8 +83,8 @@ const handleCreate = async () => {
             name: form.value.name,
             price: Number(form.value.price),
             description: form.value.description,
-            category: form.value.category.toLowerCase(),
-            subCategory: form.value.subCategory, // Added to data object
+            category: form.value.category, // Matches your list exactly
+            subCategory: form.value.subCategory,
             urls: JSON.stringify(uploadedUrls)
         };
 
@@ -106,7 +115,7 @@ const handleCreate = async () => {
             }}</p>
 
         <form @submit.prevent="handleCreate" class="flex flex-col gap-8">
-            <!-- Multiple Image Upload UI -->
+            <!-- Image Upload -->
             <div class="flex flex-col gap-4">
                 <label class="text-xs font-black uppercase tracking-wider text-black">Product Images *</label>
                 <div class="grid grid-cols-3 gap-2">
@@ -133,7 +142,6 @@ const handleCreate = async () => {
                     class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
             </div>
 
-            <!-- Row: Price, Category, and Target (subCategory) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Price -->
                 <div class="flex flex-col gap-3">
@@ -141,18 +149,23 @@ const handleCreate = async () => {
                     <input v-model="form.price" type="number" step="0.01"
                         class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
                 </div>
-                <!-- Category -->
+
+                <!-- Category Select -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Category *</label>
-                    <input v-model="form.category" type="text" placeholder="e.g. Tops"
-                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors">
+                    <select v-model="form.category" required
+                        class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer">
+                        <option value="" disabled selected>Select Category</option>
+                        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                    </select>
                 </div>
-                <!-- subCategory (Target) -->
+
+                <!-- Target (subCategory) -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Target *</label>
                     <select v-model="form.subCategory" required
                         class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer">
-                        <option value="" disabled>Select Target</option>
+                        <option value="" disabled selected>Select Target</option>
                         <option value="Women">Women</option>
                         <option value="Men">Men</option>
                         <option value="Kids">Kids</option>

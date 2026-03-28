@@ -14,11 +14,20 @@ const successMessage = ref('');
 const rawFiles = ref([]);
 const previewUrls = ref([]);
 
+// Updated Category List
+const categories = [
+    "Utility Items", "Seasonal Items", "Keychains & Charms", "Home Decor",
+    "Bags & Purses", "Jewelry", "Hair Accessories", "Hoodies",
+    "Sweaters", "Skirts", "Dresses", "Tops", "Shorts",
+    "Beach wear", "Bikini", "Trousers", "T-shirt", "Vest",
+    "Jumpsuit", "Hat", "Two-Pieces"
+];
+
 const form = ref({
     name: '',
     price: null,
     category: '',
-    subCategory: '', // Added subCategory
+    subCategory: '',
     description: '',
 });
 
@@ -38,8 +47,8 @@ onMounted(async () => {
             const data = {
                 name: product.name,
                 price: product.price,
-                category: product.category,
-                subCategory: product.subCategory || '', // Loaded from Appwrite
+                category: product.category, // Will match one from the list
+                subCategory: product.subCategory || '',
                 description: product.description,
             };
 
@@ -59,8 +68,8 @@ const validateForm = () => {
     const newErrors = {};
     if (!form.value.name?.trim()) newErrors.name = "Product name is required";
     if (!form.value.price || form.value.price <= 0) newErrors.price = "Valid price is required";
-    if (!form.value.category?.trim()) newErrors.category = "Category is required";
-    if (!form.value.subCategory) newErrors.subCategory = "Target is required"; // Added validation
+    if (!form.value.category) newErrors.category = "Category is required"; // Select validation
+    if (!form.value.subCategory) newErrors.subCategory = "Target is required";
     if (!form.value.description?.trim() || form.value.description.length < 10) {
         newErrors.description = "Description must be at least 10 characters";
     }
@@ -120,7 +129,7 @@ const handleSubmit = async () => {
         if (form.value.name !== initialData.value.name) updateData.name = form.value.name;
         if (Number(form.value.price) !== initialData.value.price) updateData.price = Number(form.value.price);
         if (form.value.category !== initialData.value.category) updateData.category = form.value.category;
-        if (form.value.subCategory !== initialData.value.subCategory) updateData.subCategory = form.value.subCategory; // Compare subCategory
+        if (form.value.subCategory !== initialData.value.subCategory) updateData.subCategory = form.value.subCategory;
         if (form.value.description !== initialData.value.description) updateData.description = form.value.description;
 
         const remainingExistingUrls = previewUrls.value.filter(url => !url.startsWith('blob:'));
@@ -182,7 +191,7 @@ const handleSubmit = async () => {
                             class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">✕</button>
                     </div>
                     <label v-if="isEditing" for="file-upload"
-                        class="aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50">
+                        class="aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
                         <span class="text-[20px] text-gray-400">+</span>
                     </label>
                 </div>
@@ -209,21 +218,24 @@ const handleSubmit = async () => {
                     <p v-if="errors.price" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.price }}</p>
                 </div>
 
-                <!-- Category -->
+                <!-- Category Select -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Category</label>
-                    <input :disabled="!isEditing" v-model="form.category" type="text"
-                        class="border-gray-200 border-2 h-14 pl-4 focus:border-black outline-none transition-colors disabled:bg-gray-50">
+                    <select :disabled="!isEditing" v-model="form.category" required
+                        class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer disabled:bg-gray-50">
+                        <option value="" disabled>Select Category</option>
+                        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                    </select>
                     <p v-if="errors.category" class="text-red-500 text-[10px] font-bold uppercase">{{ errors.category }}
                     </p>
                 </div>
 
-                <!-- Target (subCategory) -->
+                <!-- Target Select -->
                 <div class="flex flex-col gap-3">
                     <label class="text-xs font-black uppercase tracking-wider text-black">Target</label>
-                    <select :disabled="!isEditing" v-model="form.subCategory"
+                    <select :disabled="!isEditing" v-model="form.subCategory" required
                         class="border-gray-200 border-2 h-14 px-4 focus:border-black outline-none transition-colors bg-white cursor-pointer disabled:bg-gray-50">
-                        <option value="" disabled>Select</option>
+                        <option value="" disabled>Select Target</option>
                         <option value="Women">Women</option>
                         <option value="Men">Men</option>
                         <option value="Kids">Kids</option>

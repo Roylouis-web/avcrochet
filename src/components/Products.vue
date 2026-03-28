@@ -24,11 +24,27 @@ const subCategoryOptions = [
 
 const categoryOptions = [
     { label: 'All Categories', value: '' },
-    { label: 'Beanies', value: 'Beanies' },
-    { label: 'Bucket Hats', value: 'Bucket Hats' },
-    { label: 'Gowns', value: 'Gowns' },
+    { label: 'Utility Items', value: 'Utility Items' },
+    { label: 'Seasonal Items', value: 'Seasonal Items' },
+    { label: 'Keychains & Charms', value: 'Keychains & Charms' },
+    { label: 'Home Decor', value: 'Home Decor' },
+    { label: 'Bags & Purses', value: 'Bags & Purses' },
+    { label: 'Jewelry', value: 'Jewelry' },
+    { label: 'Hair Accessories', value: 'Hair Accessories' },
+    { label: 'Hoodies', value: 'Hoodies' },
+    { label: 'Sweaters', value: 'Sweaters' },
+    { label: 'Skirts', value: 'Skirts' },
     { label: 'Dresses', value: 'Dresses' },
-    { label: 'Bikinis', value: 'Bikinis' }
+    { label: 'Tops', value: 'Tops' },
+    { label: 'Shorts', value: 'Shorts' },
+    { label: 'Beach wear', value: 'Beach wear' },
+    { label: 'Bikini', value: 'Bikini' },
+    { label: 'Trousers', value: 'Trousers' },
+    { label: 'T-shirt', value: 'T-shirt' },
+    { label: 'Vest', value: 'Vest' },
+    { label: 'Jumpsuit', value: 'Jumpsuit' },
+    { label: 'Hat', value: 'Hat' },
+    { label: 'Two-Pieces', value: 'Two-Pieces' }
 ];
 
 const sortOptions = [
