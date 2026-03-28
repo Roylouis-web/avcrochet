@@ -116,7 +116,7 @@ onMounted(fetchProducts);
 
         <!-- Tool Bar: Filters + Sort -->
         <section
-            class="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white sticky top-0 z-20">
+            class="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white">
 
             <div class="flex flex-wrap gap-6 items-center justify-center">
                 <!-- Target Dropdown -->
