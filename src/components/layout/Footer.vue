@@ -7,8 +7,8 @@
       <h4 class="font-black uppercase tracking-widest text-white">Quick links</h4>
       <div class="flex flex-col md:flex-row gap-6 opacity-80">
         <!-- Added About Link -->
-        <RouterLink to="/about" class="hover:opacity-100 hover:text-white transition-all uppercase tracking-tighter">
-          About Our Story</RouterLink>
+        <RouterLink to="/about" class="hover:opacity-100 hover:text-white transition-all tracking-tighter">
+          About Us</RouterLink>
 
         <RouterLink to="/faq" class="hover:opacity-100 hover:text-white transition-all">Frequently Asked Questions
         </RouterLink>
