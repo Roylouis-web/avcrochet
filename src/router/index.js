@@ -20,6 +20,7 @@ import ForgotPassword from '@/components/ForgotPassword.vue'
 import AppwriteService from '@/services/AppwriteService';
 import RefundPolicy from '@/components/RefundPolicy.vue'
 import About from '@/components/About.vue'
+import Income from '@/components/Income.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -125,6 +126,12 @@ const router = createRouter({
       name: 'RefundPolicy',
       component: RefundPolicy,
       meta: { requiresAuth: false }
+    },
+    {
+      path: '/income',
+      name: 'Income',
+      component: Income,
+      meta: { requiresAuth: true, isAdminOnly: true }
     },
     {
       path: '/:pathMatch(.*)*',

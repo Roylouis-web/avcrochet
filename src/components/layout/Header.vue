@@ -101,7 +101,8 @@ const handleLogout = async () => {
       </RouterLink>
 
       <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center gap-5 text-sm font-medium uppercase tracking-widest">
+      <div
+        class="hidden md:flex flex-wrap justify-center items-center gap-5 text-sm font-medium uppercase tracking-widest">
         <RouterLink v-for="link in ['Home', 'Products', 'Orders', 'FAQ', 'Contact']" :key="link"
           :to="link === 'Home' ? '/' : `/${link.toLowerCase().replace(' ', '-')}`"
           active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
@@ -109,11 +110,18 @@ const handleLogout = async () => {
           {{ link }}
         </RouterLink>
 
-        <RouterLink v-if="isAdmin" to="/products/create"
-          active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
-          class="opacity-70 hover:opacity-100 transition-opacity pb-1">
-          Create
-        </RouterLink>
+        <!-- ADMIN ONLY LINKS -->
+        <template v-if="isAdmin">
+          <RouterLink to="/products/create" active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
+            class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+            Create
+          </RouterLink>
+          <RouterLink to="/income" active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
+            class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+            Income
+          </RouterLink>
+        </template>
+
         <RouterLink v-else-if="user" to="/edit_profile"
           active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
           class="opacity-70 hover:opacity-100 transition-opacity pb-1">
@@ -182,10 +190,17 @@ const handleLogout = async () => {
             <li>{{ link }}</li>
           </RouterLink>
 
-          <RouterLink v-if="isAdmin" to="/products/create" @click="isMenuOpen = false"
-            class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
-            <li>Create</li>
-          </RouterLink>
+          <!-- ADMIN ONLY MOBILE LINKS -->
+          <template v-if="isAdmin">
+            <RouterLink to="/products/create" @click="isMenuOpen = false"
+              class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
+              <li>Create</li>
+            </RouterLink>
+            <RouterLink to="/income" @click="isMenuOpen = false"
+              class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-[#FFD700]">
+              <li>Income</li>
+            </RouterLink>
+          </template>
 
           <li v-if="user" @click="handleLogout"
             class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-red-500 cursor-pointer">

@@ -68,7 +68,7 @@
                         digital patterns, we're glad you're part of our community.
                     </p>
                     <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                        <RouterLink to="/collections"
+                        <RouterLink to="/products"
                             class="bg-[#D4AF37] text-black px-8 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors">
                             Shop Collection
                         </RouterLink>
