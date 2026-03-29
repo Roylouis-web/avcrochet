@@ -142,17 +142,12 @@ onMounted(fetchProducts);
         <!-- Tool Bar -->
         <!-- Tool Bar: Updated for better mobile spacing -->
         <section
-            class="flex flex-col md:flex-row justify-between items-center px-4 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white">
+            class="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white sticky top-0 z-20">
 
-            <!-- Mobile: Grid layout to keep it compact -->
-            <div
-                class="grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-6 items-center justify-center w-full md:w-auto">
-
-                <!-- Target -->
-                <div
-                    class="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 border-r md:border-none border-gray-100 pr-2 md:pr-0">
-                    <label
-                        class="font-bold text-[8px] md:text-[10px] uppercase tracking-widest text-gray-400">Target</label>
+            <div class="flex flex-wrap gap-6 items-center justify-center">
+                <!-- Target Dropdown -->
+                <div class="flex items-center gap-2">
+                    <label class="font-bold text-[10px] uppercase tracking-widest text-gray-400">Target</label>
                     <select v-model="currentSubCategory"
                         class="bg-transparent border-none text-[10px] md:text-[11px] font-black uppercase tracking-widest focus:ring-0 cursor-pointer p-0">
                         <option v-for="opt in subCategoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}
@@ -231,8 +226,8 @@ onMounted(fetchProducts);
                         <div class="mt-4 text-left">
                             <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
                                 outfit.name }}</p>
-                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">₦{{
-                                outfit.price.toLocaleString() }}</p>
+                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">${{
+                                outfit.price }}</p>
                         </div>
                     </RouterLink>
                 </div>
