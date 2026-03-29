@@ -166,9 +166,10 @@ onMounted(fetchProducts);
                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
                         </div>
                         <div class="mt-4 text-left">
-                            <p class="font-bold text-sm uppercase truncate">{{ outfit.name }}</p>
-                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">₦{{
-                                outfit.price.toLocaleString() }}</p>
+                            <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
+                                outfit.name }}</p>
+                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">${{
+                                outfit.price }}</p>
                         </div>
                     </RouterLink>
                 </div>
