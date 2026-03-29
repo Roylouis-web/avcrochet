@@ -102,7 +102,7 @@ const fetchProducts = async () => {
             let mPrice = 0;
             try {
                 const sizes = typeof row.sizes === 'string' ? JSON.parse(row.sizes) : row.sizes;
-                mPrice = sizes?.['M'] || 0;
+                mPrice = sizes?.['XS'] || 0;
             } catch (e) { console.error("Price parsing error", e); }
 
             return {
