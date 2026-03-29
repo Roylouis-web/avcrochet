@@ -226,7 +226,7 @@ onMounted(fetchProducts);
                         <div class="mt-4 text-left">
                             <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
                                 outfit.name }}</p>
-                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">${{
+                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">₦{{
                                 outfit.price }}</p>
                         </div>
                     </RouterLink>
