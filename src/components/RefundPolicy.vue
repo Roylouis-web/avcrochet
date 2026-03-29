@@ -62,7 +62,7 @@
                 <p>
                     Please inspect your order upon reception. If the item is defective, damaged, or if you receive
                     the wrong item, contact us immediately at
-                    <a href="mailto:support@avcrochet.com" class="text-[#D4AF37] underline">support@avcrochet.com</a>
+                    <a href="mailto:support@avcrochet.com" class="text-[#D4AF37] underline">support@avcroslay.com</a>
                     so that we can evaluate the issue and make it right.
                 </p>
             </section>
