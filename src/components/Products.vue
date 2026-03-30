@@ -167,16 +167,20 @@ onMounted(() => fetchProducts(false));
             <template v-else>
                 <div v-for="outfit in displayOutfits" :key="outfit.id" v-memo="[outfit.id, outfit.displayImage]"
                     class="group cursor-pointer">
-                    <div class="relative overflow-hidden rounded-[10px] aspect-[4/5] bg-gray-50">
-                        <img :src="outfit.displayImage" :alt="outfit.name" loading="lazy"
-                            class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    </div>
-                    <div class="mt-4 space-y-1">
-                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{{ outfit.category
-                            }}</h3>
-                        <p class="text-sm font-bold uppercase text-[#3A3A3A] truncate">{{ outfit.name }}</p>
-                        <p class="text-sm font-black text-[12px] text-gray-500">₦{{ outfit.price.toLocaleString() }}</p>
-                    </div>
+                    <RouterLink :to="`/products/${outfit.category.toLowerCase().replace(/\s+/g, '-')}/${outfit.id}`">
+                        <div
+                            class="overflow-hidden rounded-[10px] bg-gray-50 aspect-[4/5] border border-gray-100 relative">
+                            <!-- Removed loading="lazy" to keep images persistent in memory -->
+                            <img :src="outfit.displayImage" :alt="outfit.name" decoding="async"
+                                class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                        </div>
+                        <div class="mt-4 text-left">
+                            <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
+                                outfit.name }}</p>
+                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">₦{{
+                                outfit.price }}</p>
+                        </div>
+                    </RouterLink>
                 </div>
             </template>
         </section>

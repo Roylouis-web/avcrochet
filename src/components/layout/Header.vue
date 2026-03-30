@@ -96,7 +96,7 @@ const handleLogout = async () => {
 <template>
   <header class="relative bg-black z-50 text-[#FFD700]">
     <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-900">
-      <RouterLink to="/" class="hover:opacity-80 transition-opacity">
+      <RouterLink to="/" class="transition-opacity">
         <img src="/logo.jpg" alt="Logo" class="w-28 md:w-36 h-auto object-contain" />
       </RouterLink>
 
