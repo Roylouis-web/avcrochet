@@ -7,13 +7,14 @@ import { Query } from 'appwrite';
 const route = useRoute();
 const outfits = ref([]);
 const loading = ref(true);
+const isloadingMore = ref(false); // New state to track specific "Load More" action
 const totalProducts = ref(0);
 const currentSort = ref('date-desc');
 const currentSubCategory = ref('');
 const currentCategory = ref('');
 const currentPriceRange = ref('');
 const currentPage = ref(1);
-const itemsPerPage = 20;
+const itemsPerPage = 12; // 12 items for perfect grid symmetry (2, 3, or 4 cols)
 
 // Filter options
 const subCategoryOptions = [{ label: 'All Targets', value: '' }, { label: 'Women', value: 'Women' }, { label: 'Men', value: 'Men' }, { label: 'Kids', value: 'Kids' }, { label: 'Unisex', value: 'Unisex' }];
@@ -29,8 +30,10 @@ const getDisplayImage = (urlsData) => {
     } catch (e) { return urlsData; }
 };
 
-const fetchProducts = async () => {
-    loading.value = true;
+const fetchProducts = async (append = false) => {
+    if (append) isloadingMore.value = true;
+    else loading.value = true;
+
     try {
         const queries = [Query.limit(itemsPerPage), Query.offset((currentPage.value - 1) * itemsPerPage)];
         const searchQuery = route.query.q;
@@ -45,8 +48,7 @@ const fetchProducts = async () => {
         const response = await AppwriteService.getProducts(queries);
         const rows = response.documents || response.rows || [];
 
-        // STABILIZE DATA: Process everything here once
-        outfits.value = rows.map(row => {
+        const newItems = rows.map(row => {
             let mPrice = 0;
             try {
                 const sizes = typeof row.sizes === 'string' ? JSON.parse(row.sizes) : row.sizes;
@@ -58,14 +60,25 @@ const fetchProducts = async () => {
                 name: row.name,
                 category: row.category,
                 price: mPrice,
-                // Image is now a fixed string, not a function call
                 displayImage: getDisplayImage(row.urls || row.url)
             };
         });
+
+        if (append) {
+            outfits.value = [...outfits.value, ...newItems];
+        } else {
+            outfits.value = newItems;
+        }
         totalProducts.value = response.total;
     } finally {
         loading.value = false;
+        isloadingMore.value = false;
     }
+};
+
+const handleLoadMore = () => {
+    currentPage.value++;
+    fetchProducts(true);
 };
 
 const displayOutfits = computed(() => {
@@ -79,15 +92,12 @@ const displayOutfits = computed(() => {
     return list;
 });
 
-// Guarded watcher to prevent scroll-triggered fetches
-watch([currentSort, currentSubCategory, currentCategory, currentPriceRange, () => route.query.q], (newVal, oldVal) => {
-    if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
-        currentPage.value = 1;
-        fetchProducts();
-    }
+watch([currentSort, currentSubCategory, currentCategory, currentPriceRange, () => route.query.q], () => {
+    currentPage.value = 1;
+    fetchProducts(false); // Reset to first page on filter change
 });
 
-onMounted(fetchProducts);
+onMounted(() => fetchProducts(false));
 </script>
 
 <template>
@@ -101,7 +111,7 @@ onMounted(fetchProducts);
 
         <!-- Tool Bar -->
         <section
-            class="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white sticky top-0 z-20">
+            class="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b-2 border-[whitesmoke] gap-4 bg-white">
             <div class="flex flex-wrap gap-6 items-center justify-center">
                 <div class="flex items-center gap-2">
                     <label class="font-bold text-[10px] uppercase text-gray-400">Target</label>
@@ -141,8 +151,8 @@ onMounted(fetchProducts);
 
         <!-- Product Grid -->
         <section
-            class="mx-auto w-[95%] md:w-[85%] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-12 gap-x-6 lg:gap-x-10 mt-12 mb-20">
-            <template v-if="loading">
+            class="mx-auto w-[95%] md:w-[85%] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-12 gap-x-6 lg:gap-x-10 m-12">
+            <template v-if="loading && outfits.length === 0">
                 <div v-for="n in 8" :key="n" class="animate-pulse bg-gray-100 rounded-[10px] aspect-[4/5]"></div>
             </template>
 
@@ -155,34 +165,28 @@ onMounted(fetchProducts);
             </template>
 
             <template v-else>
-                <!-- v-memo stops the card from re-rendering unless the data actually changes -->
                 <div v-for="outfit in displayOutfits" :key="outfit.id" v-memo="[outfit.id, outfit.displayImage]"
                     class="group cursor-pointer">
-                    <RouterLink :to="`/products/${outfit.category.toLowerCase().replace(/\s+/g, '-')}/${outfit.id}`">
-                        <div
-                            class="overflow-hidden rounded-[10px] bg-gray-50 aspect-[4/5] border border-gray-100 relative">
-                            <!-- Removed loading="lazy" to keep images persistent in memory -->
-                            <img :src="outfit.displayImage" :alt="outfit.name" decoding="async"
-                                class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
-                        </div>
-                        <div class="mt-4 text-left">
-                            <p class="font-bold hover:underline underline-offset-4 truncate text-sm uppercase">{{
-                                outfit.name }}</p>
-                            <p class="text-gray-500 font-bold text-[11px] mt-1 tracking-widest uppercase">${{
-                                outfit.price }}</p>
-                        </div>
-                    </RouterLink>
+                    <div class="relative overflow-hidden rounded-[10px] aspect-[4/5] bg-gray-50">
+                        <img :src="outfit.displayImage" :alt="outfit.name" loading="lazy"
+                            class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    </div>
+                    <div class="mt-4 space-y-1">
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{{ outfit.category
+                            }}</h3>
+                        <p class="text-sm font-bold uppercase text-[#3A3A3A] truncate">{{ outfit.name }}</p>
+                        <p class="text-sm font-black text-[12px] text-gray-500">₦{{ outfit.price.toLocaleString() }}</p>
+                    </div>
                 </div>
             </template>
         </section>
 
-        <!-- Pagination -->
-        <div v-if="totalProducts > itemsPerPage" class="flex justify-center gap-4 mb-20">
-            <button :disabled="currentPage === 1" @click="currentPage--; fetchProducts()"
-                class="px-6 py-2 border font-bold uppercase text-[10px] tracking-widest disabled:opacity-30">Prev</button>
-            <span class="flex items-center text-[10px] font-bold uppercase">Page {{ currentPage }}</span>
-            <button :disabled="currentPage * itemsPerPage >= totalProducts" @click="currentPage++; fetchProducts()"
-                class="px-6 py-2 border font-bold uppercase text-[10px] tracking-widest disabled:opacity-30">Next</button>
+        <!-- Load More Section -->
+        <div v-if="outfits.length < totalProducts" class="flex justify-center mt-20 mb-32">
+            <button @click="handleLoadMore" :disabled="isloadingMore"
+                class="border-2 border-black px-16 py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black hover:text-white transition-all duration-500 disabled:opacity-30">
+                {{ isloadingMore ? 'Loading...' : 'Load More' }}
+            </button>
         </div>
     </section>
 </template>
