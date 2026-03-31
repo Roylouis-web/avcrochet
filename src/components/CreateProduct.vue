@@ -23,11 +23,11 @@ const form = ref({
 });
 
 const categories = [
-    "Utility Items", "Seasonal Items", "Keychains & Charms", "Home Decor",
+    "Utility Items", "Seasonal Items", "Keychains & Charms", "Home Decors",
     "Bags & Purses", "Jewelry", "Hair Accessories", "Hoodies",
     "Sweaters", "Skirts", "Dresses", "Tops", "Shorts",
-    "Beach wear", "Bikini", "Trousers", "T-shirt", "Vest",
-    "Jumpsuit", "Hat", "Two-Pieces"
+    "Beach wears", "Bikinis", "Trousers", "T-shirts", "Vests",
+    "Jumpsuits", "Hats", "Two-Pieces", "Brallets", "Beanies"
 ];
 
 const handleFileChange = (event) => {

@@ -18,7 +18,7 @@ const itemsPerPage = 12; // 12 items for perfect grid symmetry (2, 3, or 4 cols)
 
 // Filter options
 const subCategoryOptions = [{ label: 'All Targets', value: '' }, { label: 'Women', value: 'Women' }, { label: 'Men', value: 'Men' }, { label: 'Kids', value: 'Kids' }, { label: 'Unisex', value: 'Unisex' }];
-const categoryOptions = [{ label: 'All Categories', value: '' }, { label: 'Beanies', value: 'Beanies' }, { label: 'Bucket Hats', value: 'Bucket Hats' }, { label: 'Gowns', value: 'Gowns' }, { label: 'Dresses', value: 'Dresses' }, { label: 'Bikinis', value: 'Bikinis' }];
+const categoryOptions = [{ label: 'All Categories', value: '' }, { label: 'Beanies', value: 'Beanies' }, { label: 'Hats', value: 'Hats' }, { label: 'Gowns', value: 'Gowns' }, { label: 'Dresses', value: 'Dresses' }, { label: 'Brallets', value: 'Brallets' }];
 const priceOptions = [{ label: 'All Prices', value: '' }, { label: 'Under ₦10k', value: '0-10000' }, { label: '₦10k - ₦30k', value: '10000-30000' }, { label: '₦30k - ₦50k', value: '30000-50000' }, { label: 'Over ₦50k', value: '50000-999999' }];
 const sortOptions = [{ label: 'Newest First', value: 'date-desc' }, { label: 'Oldest First', value: 'date-asc' }, { label: 'Price: Low-High', value: 'price-asc' }, { label: 'Price: High-Low', value: 'price-desc' }, { label: 'Name: A-Z', value: 'title-asc' }];
 
