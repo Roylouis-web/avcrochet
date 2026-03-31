@@ -95,49 +95,56 @@ const handleLogout = async () => {
 
 <template>
   <header class="relative bg-black z-50 text-[#FFD700]">
-    <nav class="flex items-center justify-between px-6 py-2 border-b border-gray-900">
-      <RouterLink to="/" class="transition-opacity">
-        <img src="/logo.jpg" alt="Logo" class="w-40 md:w-48 h-auto object-contain" />
-      </RouterLink>
+    <!-- 3-Column Grid: [Logo] [Links (Wrap/Center)] [Icons] -->
+    <nav class="grid grid-cols-[auto_1fr_auto] items-center px-6 py-4 border-b border-gray-900 min-h-[80px] gap-8">
 
-      <!-- Desktop Navigation -->
+      <!-- 1. LOGO (Left) -->
+      <div class="flex justify-start shrink-0">
+        <RouterLink to="/" class="transition-opacity">
+          <img src="/logo.jpg" alt="Logo" class="w-64 md:w-48 h-auto object-contain brightness-[1.1] contrast-[1.1]" />
+
+        </RouterLink>
+      </div>
+
+      <!-- 2. DESKTOP NAVIGATION (Center - Wraps for large screens) -->
       <div
-        class="hidden md:flex flex-wrap justify-center items-center gap-5 text-sm font-medium uppercase tracking-widest">
+        class="hidden md:flex flex-wrap justify-center items-center gap-x-8 gap-y-3 text-sm font-medium uppercase tracking-widest text-center">
         <RouterLink v-for="link in ['Home', 'Products', 'Orders', 'FAQ', 'Contact']" :key="link"
           :to="link === 'Home' ? '/' : `/${link.toLowerCase().replace(' ', '-')}`"
           active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
-          class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+          class="opacity-70 hover:opacity-100 transition-opacity pb-1 whitespace-nowrap">
           {{ link }}
         </RouterLink>
 
         <!-- ADMIN ONLY LINKS -->
         <template v-if="isAdmin">
           <RouterLink to="/products/create" active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
-            class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+            class="opacity-70 hover:opacity-100 transition-opacity pb-1 whitespace-nowrap">
             Create
           </RouterLink>
           <RouterLink to="/income" active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
-            class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+            class="opacity-70 hover:opacity-100 transition-opacity pb-1 whitespace-nowrap">
             Income
           </RouterLink>
         </template>
 
         <RouterLink v-else-if="user" to="/edit_profile"
           active-class="text-[#FFD700] opacity-100 border-b border-[#D4AF37]"
-          class="opacity-70 hover:opacity-100 transition-opacity pb-1">
+          class="opacity-70 hover:opacity-100 transition-opacity pb-1 whitespace-nowrap">
           Profile
         </RouterLink>
 
-        <!-- Desktop Logout (MD Screens) -->
+        <!-- Desktop Logout -->
         <button v-if="user" @click="handleLogout"
-          class="opacity-70 hover:opacity-100 transition-opacity pb-1 text-red-500 uppercase">
+          class="opacity-70 hover:opacity-100 transition-opacity pb-1 text-red-500 uppercase whitespace-nowrap">
           Logout
         </button>
       </div>
 
-      <div class="flex items-center gap-5">
+      <!-- 3. ICONS (Right) -->
+      <div class="flex items-center justify-end gap-5 shrink-0">
         <button @click="toggleSearch" class="hover:opacity-60 transition-opacity text-[#FFD700]" aria-label="Search">
-          <svg xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -145,7 +152,7 @@ const handleLogout = async () => {
         </button>
 
         <RouterLink :to="user ? '/edit_profile' : '/login'" class="hover:opacity-60 transition-opacity text-[#FFD700]">
-          <svg xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
@@ -153,7 +160,7 @@ const handleLogout = async () => {
         </RouterLink>
 
         <RouterLink v-if="!isAdmin" to="/cart" class="hover:opacity-60 transition-opacity relative text-[#FFD700]">
-          <svg xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
@@ -164,12 +171,13 @@ const handleLogout = async () => {
           </span>
         </RouterLink>
 
+        <!-- Mobile Menu Button -->
         <button @click="toggleMenu" class="md:hidden hover:opacity-60 transition-opacity text-[#FFD700]">
-          <svg v-if="!isMenuOpen" xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+          <svg v-if="!isMenuOpen" xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="currentColor" class="size-7">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
-          <svg v-else xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          <svg v-else xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="size-7">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
@@ -201,13 +209,22 @@ const handleLogout = async () => {
               <li>Income</li>
             </RouterLink>
           </template>
-
-          <li v-if="user" @click="handleLogout"
-            class="px-8 py-5 border-b border-gray-900 active:bg-gray-900 text-red-500 cursor-pointer">
-            Logout
-          </li>
         </ul>
       </div>
     </Transition>
   </header>
 </template>
+
+<style scoped>
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease-in-out;
+  max-height: 500px;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+</style>
