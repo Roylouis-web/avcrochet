@@ -101,7 +101,7 @@ const handleLogout = async () => {
       <!-- 1. LOGO (Left) -->
       <div class="flex justify-start shrink-0">
         <RouterLink to="/" class="transition-opacity">
-          <img src="/logo.jpeg" alt="Logo" class="w-75 md:w-80 h-auto" />
+          <img src="/logo.jpeg" alt="Logo" class="w-75 h-auto" />
 
         </RouterLink>
       </div>
